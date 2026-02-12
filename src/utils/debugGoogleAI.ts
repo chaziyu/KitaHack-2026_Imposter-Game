@@ -20,8 +20,14 @@ export function checkGoogleAIStatus() {
     return true;
 }
 
+declare global {
+    interface Window {
+        checkGoogleAI: () => boolean;
+    }
+}
+
 // Call this on module load to help debug
 if (typeof window !== 'undefined') {
-    (window as any).checkGoogleAI = checkGoogleAIStatus;
+    window.checkGoogleAI = checkGoogleAIStatus;
     console.log('💡 Run checkGoogleAI() in console to debug API key');
 }

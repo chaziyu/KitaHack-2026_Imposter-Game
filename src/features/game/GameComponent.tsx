@@ -15,8 +15,6 @@ export const GameComponent = () => {
     if (!scene) return;
 
     if (status === 'DISCUSSION') {
-      // scene.startMeeting(); // Handled in MainScene now
-
       // Auto-end meeting check
       const interval = setInterval(() => {
         const { meetingEndTime } = useMeetingStore.getState();
@@ -29,7 +27,7 @@ export const GameComponent = () => {
       return () => clearInterval(interval);
 
     } else if (status === 'IDLE') {
-      // scene.endMeeting(); // Handled in MainScene
+      // Idle state
     }
   }, [status]);
 

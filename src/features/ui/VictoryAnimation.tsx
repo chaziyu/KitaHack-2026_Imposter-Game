@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VICTORY_SCENES } from '../../shared/StoryContent';
 import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { useGameStore } from '../../stores/useGameStore';
@@ -24,19 +24,19 @@ export const VictoryAnimation = ({ onClose }: VictoryAnimationProps) => {
     const isLastScene = currentSceneIndex === VICTORY_SCENES.length - 1;
 
     // Helper: Skip to Impact Summary
-    const handleSkipAll = () => {
+    const handleSkipAll = React.useCallback(() => {
         setShowImpactSummary(true);
         setConfetti(true); // Ensure confetti stays if skipped
-    };
+    }, []);
 
     // Helper: Advance to next scene
-    const handleNext = () => {
+    const handleNext = React.useCallback(() => {
         if (isLastScene) {
             handleSkipAll();
         } else {
             setCurrentSceneIndex(prev => prev + 1);
         }
-    };
+    }, [isLastScene, handleSkipAll]);
 
     // Auto-advance to next scene (Timer)
     useEffect(() => {
@@ -47,7 +47,7 @@ export const VictoryAnimation = ({ onClose }: VictoryAnimationProps) => {
         }, currentScene.duration);
 
         return () => clearTimeout(timer);
-    }, [currentSceneIndex, currentScene.duration, isLastScene, showImpactSummary]);
+    }, [currentSceneIndex, currentScene.duration, showImpactSummary, handleNext]);
 
     // Keyboard support: Space/Enter = Next, Escape = Skip All
     useEffect(() => {
@@ -65,7 +65,7 @@ export const VictoryAnimation = ({ onClose }: VictoryAnimationProps) => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentSceneIndex, isLastScene, showImpactSummary]);
+    }, [showImpactSummary, handleNext, handleSkipAll]);
 
     // Trigger confetti on celebration scene
     useEffect(() => {

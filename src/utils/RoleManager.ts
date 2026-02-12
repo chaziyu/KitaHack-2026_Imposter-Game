@@ -39,7 +39,7 @@ export async function syncRolesToFirebase(
     roomCode: string,
     roleAssignments: RoleAssignment[]
 ): Promise<void> {
-    const updates: Record<string, any> = {};
+    const updates: Record<string, string | boolean> = {};
 
     for (const { playerId, role } of roleAssignments) {
         updates[`rooms/${roomCode}/players/${playerId}/role`] = role;

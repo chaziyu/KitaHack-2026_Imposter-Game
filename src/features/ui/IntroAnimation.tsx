@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { INTRO_SCENES } from '../../shared/StoryContent';
 import { usePlayerProgress } from '../../stores/usePlayerProgress';
 
@@ -14,6 +14,23 @@ export const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
     const currentScene = INTRO_SCENES[currentSceneIndex];
     const isLastScene = currentSceneIndex === INTRO_SCENES.length - 1;
 
+    // Memoize particles to avoid impure render calls
+    const particles = useMemo(() => {
+        return Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            animationDuration: `${2 + Math.random() * 3}s`
+        }));
+    }, []);
+
+    const handleComplete = React.useCallback(() => {
+        markIntroSeen();
+        setIsVisible(false);
+        onComplete();
+    }, [markIntroSeen, onComplete]);
+
     // Auto-advance to next scene
     useEffect(() => {
         if (!isVisible) return;
@@ -27,16 +44,10 @@ export const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
         }, currentScene.duration);
 
         return () => clearTimeout(timer);
-    }, [currentSceneIndex, isVisible, currentScene.duration, isLastScene]);
+    }, [currentSceneIndex, isVisible, currentScene.duration, isLastScene, handleComplete]);
 
     const handleSkip = () => {
         skipIntro();
-        setIsVisible(false);
-        onComplete();
-    };
-
-    const handleComplete = () => {
-        markIntroSeen();
         setIsVisible(false);
         onComplete();
     };
@@ -65,15 +76,15 @@ export const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
 
             {/* Particle Effects */}
             <div className="absolute inset-0 opacity-30">
-                {Array.from({ length: 50 }).map((_, i) => (
+                {particles.map((particle) => (
                     <div
-                        key={i}
+                        key={particle.id}
                         className="absolute w-2 h-2 bg-white rounded-full animate-twinkle"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            animationDelay: `${Math.random() * 3}s`,
-                            animationDuration: `${2 + Math.random() * 3}s`
+                            left: particle.left,
+                            top: particle.top,
+                            animationDelay: particle.animationDelay,
+                            animationDuration: particle.animationDuration
                         }}
                     />
                 ))}

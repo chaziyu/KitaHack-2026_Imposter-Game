@@ -59,7 +59,6 @@ function App() {
     // Subscribe to game status and team challenge completed count
     // Subscribe to game status and team challenge completed count
     network.subscribeToGameStatus((status) => {
-      // setTeamChallengesCompleted(teamChallenges); // REMOVED
 
       if (status === 'VICTORY_CREW' || status === 'VICTORY_IMPOSTER') {
         setMultiplayerVictoryStatus(status);
@@ -92,7 +91,6 @@ function App() {
   useEffect(() => {
     const shouldShow = shouldShowVictory();
     if (shouldShow && !showVictory) {
-      console.log('Victory condition met! Showing victory animation...');
       setShowVictory(true);
     }
   }, [completedChallenges, shouldShowVictory, showVictory, hasSeenVictory]);

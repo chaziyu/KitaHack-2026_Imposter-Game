@@ -11,7 +11,7 @@ import { db } from '../../firebaseConfig';
 
 declare global {
     interface Window {
-        monaco: any;
+        monaco: unknown;
     }
 }
 
@@ -34,50 +34,8 @@ export const MeetingUI = () => {
         selectedFileRef.current = selectedFile;
     }, [selectedFile]);
 
-    // Timer Logic
-    useEffect(() => {
-        if (status === 'IDLE') {
-            setTimeLeft(0);
-            return;
-        }
-
-        const interval = setInterval(() => {
-            const remaining = Math.max(0, Math.ceil((meetingEndTime - Date.now()) / 1000));
-            setTimeLeft(remaining);
-
-            // Host checks for end of meeting
-            if (isHost && remaining === 0 && status === 'DISCUSSION') {
-                handleMeetingEnd();
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [status, meetingEndTime, isHost]);
-
-    // Check if I voted
-    useEffect(() => {
-        if (playerId && votes[playerId]) {
-            setHasVoted(true);
-        } else {
-            setHasVoted(false);
-        }
-    }, [votes, playerId]);
-
-    // Host Logic: Auto-End when everyone voted
-    useEffect(() => {
-        if (!isHost || status !== 'DISCUSSION') return;
-
-        const alivePlayers = players.filter(p => p.isAlive);
-        const voteCount = Object.keys(votes).length;
-
-        // If everyone alive has voted (and there's at least one player), end it.
-        if (alivePlayers.length > 0 && voteCount >= alivePlayers.length) {
-            handleMeetingEnd();
-        }
-    }, [votes, players, isHost, status]);
-
     // Host Logic: Calculate Results
-    const handleMeetingEnd = async () => {
+    const handleMeetingEnd = React.useCallback(async () => {
         if (!roomCode) return;
 
         const voteCounts: Record<string, number> = {};
@@ -118,7 +76,11 @@ export const MeetingUI = () => {
 
         // 3. Apply Result
         let finalResultMsg = "";
-        let outcomeState: any = {
+        const outcomeState: {
+            ejectedId: string | null;
+            wasImposter: boolean;
+            reason: 'VOTE_TIE' | 'VOTE_SKIP' | 'VOTE_EJECT' | 'TASK_WIN' | 'IMPOSTER_WIN';
+        } = {
             ejectedId: null,
             wasImposter: false,
             reason: 'VOTE_SKIP'
@@ -162,7 +124,7 @@ export const MeetingUI = () => {
         const fullResultMsg = `${finalResultMsg}\n\nVotes:\n${voteSummary}`;
 
         // 4. Update Firebase
-        const globalUpdates: any = {};
+        const globalUpdates: Record<string, unknown> = {};
         if (ejectedPlayer && outcomeState.ejectedId) {
             // JAIL LOGIC (Instead of Eject/Kill)
             const jailTime = 60000; // 60 seconds
@@ -181,9 +143,52 @@ export const MeetingUI = () => {
         });
 
         // No auto-close - user must manually close
-    };
+    }, [roomCode, votes, players]);
 
-    const handleCloseResults = () => {
+    // Timer Logic
+    useEffect(() => {
+        if (status === 'IDLE') {
+            setTimeLeft(0);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const remaining = Math.max(0, Math.ceil((meetingEndTime - Date.now()) / 1000));
+            setTimeLeft(remaining);
+
+            // Host checks for end of meeting
+            if (isHost && remaining === 0 && status === 'DISCUSSION') {
+                handleMeetingEnd();
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [status, meetingEndTime, isHost, handleMeetingEnd]);
+
+    // Check if I voted
+    useEffect(() => {
+        if (playerId && votes[playerId]) {
+            setHasVoted(true);
+        } else {
+            setHasVoted(false);
+        }
+    }, [votes, playerId]);
+
+    // Host Logic: Auto-End when everyone voted
+    useEffect(() => {
+        if (!isHost || status !== 'DISCUSSION') return;
+
+        const alivePlayers = players.filter(p => p.isAlive);
+        const voteCount = Object.keys(votes).length;
+
+        // If everyone alive has voted (and there's at least one player), end it.
+        if (alivePlayers.length > 0 && voteCount >= alivePlayers.length) {
+            handleMeetingEnd();
+        }
+    }, [votes, players, isHost, status, handleMeetingEnd]);
+
+
+    const handleCloseResults = React.useCallback(() => {
         if (!roomCode || !isHost) return;
         update(ref(db, `rooms/${roomCode}/meeting`), {
             status: 'IDLE',
@@ -192,12 +197,12 @@ export const MeetingUI = () => {
             result: null,
             outcome: null
         });
-    };
+    }, [roomCode, isHost]);
 
-    const handleVote = (candidateId: string) => {
+    const handleVote = React.useCallback((candidateId: string) => {
         if (hasVoted || !network || status !== 'DISCUSSION') return;
         network.vote(playerId!, candidateId);
-    };
+    }, [hasVoted, network, status, playerId]);
 
     // Blame Code Highlighting (Same as before)
     useEffect(() => {
@@ -216,7 +221,7 @@ export const MeetingUI = () => {
         }
     }, [highlightedLine, selectedFile]);
 
-    const handleSendChat = (e: React.FormEvent) => {
+    const handleSendChat = React.useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (!chatInput.trim() || !network) return;
 
@@ -224,14 +229,14 @@ export const MeetingUI = () => {
         const myName = players.find(p => p.id === playerId)?.name || "Unknown";
         network.sendChatMessage(chatInput.trim(), myName);
         setChatInput('');
-    };
+    }, [chatInput, network, players, playerId]);
 
     // Trigger Meeting (Emergency Button)
-    const handleStartMeeting = () => {
+    const handleStartMeeting = React.useCallback(() => {
         if (network && playerId) {
             network.startMeeting(playerId);
         }
-    }
+    }, [network, playerId]);
 
     // --- RENDER ---
 
@@ -375,7 +380,7 @@ export const MeetingUI = () => {
                                     editorRef.current = editor;
                                     window.monaco = monaco;
                                     // Click to Highlight Logic
-                                    editor.onMouseDown((e: any) => {
+                                    editor.onMouseDown((e: { target: { type: number, position: { lineNumber: number } } }) => {
                                         if (network?.playerId === presenterId && [2, 3, 4, 6, 7].includes(e.target.type)) {
                                             network.highlightLine(selectedFile, e.target.position.lineNumber);
                                         }

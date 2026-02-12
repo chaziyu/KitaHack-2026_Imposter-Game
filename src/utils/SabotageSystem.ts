@@ -152,7 +152,7 @@ export async function triggerSabotage(
         }
 
         // Sync sabotaged code to Firebase
-        const updates: any = {};
+        const updates: Record<string, unknown> = {};
 
         if (type === 'power_cut') {
             updates[`rooms/${roomCode}/gamestate/power`] = {

@@ -10,6 +10,11 @@ interface SDGPopupProps {
 export const SDGPopup: React.FC<SDGPopupProps> = ({ sdgId, title, description, onClose }) => {
     const [visible, setVisible] = useState(false);
 
+    const handleClose = React.useCallback(() => {
+        setVisible(false);
+        setTimeout(onClose, 300); // Wait for animation
+    }, [onClose]);
+
     useEffect(() => {
         // Animate in
         setTimeout(() => setVisible(true), 100);
@@ -20,12 +25,7 @@ export const SDGPopup: React.FC<SDGPopupProps> = ({ sdgId, title, description, o
         }, 5000);
 
         return () => clearTimeout(timer);
-    }, []);
-
-    const handleClose = () => {
-        setVisible(false);
-        setTimeout(onClose, 300); // Wait for animation
-    };
+    }, [handleClose]);
 
     const getSDGColor = (id: number) => {
         const colors: Record<number, string> = {

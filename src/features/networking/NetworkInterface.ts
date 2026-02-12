@@ -67,7 +67,6 @@ export interface NetworkService {
 
   // Team Challenge Tracking & Victory
   syncTeamChallengeCompletion(challengeId: string): void;
-  // REMOVED LEGACY: subscribeToGameStatus(callback: (status: string, teamChallengesCompleted: number) => void): void;
   subscribeToGameStatus(callback: (status: string) => void): void; // Simplified wrapper
 
   // Global Timer

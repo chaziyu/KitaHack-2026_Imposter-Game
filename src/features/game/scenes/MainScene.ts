@@ -637,6 +637,16 @@ export class MainScene extends Phaser.Scene {
     if (dist < 50) {
       // 1. Get cooldown from store
       const { cooldownEnd } = useMeetingStore.getState();
+      
+      // --- DEBUG LOG START ---
+      // Open Console (F12) to see this
+      if (Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
+         console.log("DEBUG CHECK:");
+         console.log("Cooldown End Time:", cooldownEnd);
+         console.log("Current Time:", Date.now());
+         console.log("Difference:", cooldownEnd ? cooldownEnd - Date.now() : "No Cooldown");
+      }
+      // --- DEBUG LOG END ---
       const now = Date.now();
       const remaining = cooldownEnd ? Math.ceil((cooldownEnd - now) / 1000) : 0;
 

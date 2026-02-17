@@ -120,13 +120,14 @@ export class FirebaseAdapter implements NetworkService {
           presenterId: null,
           highlightedLine: null,
           votes: {},
-          result: null
-        });
+          result: null,
+          chatMessages: [] // Ensure default exists
+        } as unknown as MeetingState);
       }
     });
   }
 
- startMeeting(callerId: string): void {
+  startMeeting(callerId: string): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
     
@@ -145,8 +146,6 @@ export class FirebaseAdapter implements NetworkService {
     });
   }
 
-  // Inside FirebaseAdapter.ts
-
   endMeeting(): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
@@ -154,6 +153,7 @@ export class FirebaseAdapter implements NetworkService {
     // 30 Second Cooldown
     const COOLDOWN_SECONDS = 30; 
 
+    // Use 'set' to reset state AND add the cooldown timer
     set(meetingRef, {
       status: 'IDLE',
       callerId: null,

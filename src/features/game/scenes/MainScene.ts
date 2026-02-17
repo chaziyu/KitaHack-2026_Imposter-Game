@@ -635,10 +635,28 @@ export class MainScene extends Phaser.Scene {
     // Distance check
     const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.meetingButton.x, this.meetingButton.y);
     if (dist < 50) {
-      this.meetingText.setVisible(true);
-      if (this.wasd.M && Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
-        if (this.myPlayerId) {
-          this.network.startMeeting(this.myPlayerId);
+      // 1. Get cooldown from store
+      const { cooldownEnd } = useMeetingStore.getState();
+      const now = Date.now();
+      const remaining = cooldownEnd ? Math.ceil((cooldownEnd - now) / 1000) : 0;
+
+      // 2. Logic: Is it on cooldown?
+      if (remaining > 0) {
+        // ON COOLDOWN
+        this.meetingText.setText(`Cooldown: ${remaining}s`);
+        this.meetingText.setColor('#ff0000'); // Red text
+        this.meetingText.setVisible(true);
+      } else {
+        // READY
+        this.meetingText.setText("Press 'M' for Meeting");
+        this.meetingText.setColor('#ffffff'); // White text
+        this.meetingText.setVisible(true);
+
+        // Only allow press if NO cooldown
+        if (this.wasd.M && Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
+          if (this.myPlayerId) {
+            this.network.startMeeting(this.myPlayerId);
+          }
         }
       }
     } else {

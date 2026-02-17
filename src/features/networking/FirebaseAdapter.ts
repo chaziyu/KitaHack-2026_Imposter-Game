@@ -126,29 +126,45 @@ export class FirebaseAdapter implements NetworkService {
     });
   }
 
-  startMeeting(callerId: string): void {
+ startMeeting(callerId: string): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
-    update(meetingRef, {
+    
+    // CHANGED: Use 'set' instead of 'update'
+    // 'set' completely wipes the previous meeting data (votes, chat, results)
+    // and starts fresh.
+    set(meetingRef, {
       status: 'DISCUSSION',
       callerId: callerId,
       presenterId: callerId,
-      meetingEndTime: Date.now() + 60000,
+      meetingEndTime: Date.now() + 60000, // 60s timer
       highlightedLine: null,
-      votes: {}
+      votes: {}, // Now this actually ensures votes are empty!
+      chat: {},  // This also clears the chat for the new meeting (optional, but cleaner)
+      result: null 
     });
   }
+
+  // Inside FirebaseAdapter.ts
 
   endMeeting(): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
-    update(meetingRef, {
+    
+    // 30 Second Cooldown
+    const COOLDOWN_SECONDS = 30; 
+
+    set(meetingRef, {
       status: 'IDLE',
       callerId: null,
       presenterId: null,
       highlightedLine: null,
       votes: {},
-      result: null
+      chat: {},
+      result: null,
+      
+      // ADD THIS LINE:
+      cooldownEnd: Date.now() + (COOLDOWN_SECONDS * 1000) 
     });
   }
 

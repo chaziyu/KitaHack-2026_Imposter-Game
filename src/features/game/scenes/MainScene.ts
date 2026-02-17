@@ -31,7 +31,7 @@ export class MainScene extends Phaser.Scene {
     D: Phaser.Input.Keyboard.Key;
     M: Phaser.Input.Keyboard.Key; // Debug: Meeting
   };
-
+  
   private logicZone!: Phaser.GameObjects.Rectangle;
   private hubZone!: Phaser.GameObjects.Rectangle;
   private bgm!: Phaser.Sound.BaseSound | Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound;
@@ -55,7 +55,8 @@ export class MainScene extends Phaser.Scene {
   private powerFixTimer: number = 0;
   private powerFailureTime: number = 0;
   private powerFailureText!: Phaser.GameObjects.Text;
-
+  private mapBuilder!: MapBuilder;
+  
   // Sabotage States
   private isDoorsSealed: boolean = false;
   private isTerminalsLocked: boolean = false;
@@ -286,8 +287,8 @@ export class MainScene extends Phaser.Scene {
 
     // 2. Build Map
     // 2. Build Map
-    const mapBuilder = new MapBuilder(this);
-    const buildResult = mapBuilder.build();
+    this.mapBuilder = new MapBuilder(this);     
+    const buildResult = this.mapBuilder.build();
     const { walls, dbZone, apiZone, hubZone, meetingZone, solarAcademyZone, wasteAcademyZone, oxygenAcademyZone, doorTiles, spawnPoint } = buildResult;
 
     // We know 'walls' is a TilemapLayer in this context, but TS infers union with StaticGroup
@@ -749,8 +750,13 @@ export class MainScene extends Phaser.Scene {
     this.isPowerOut = isOut;
     this.powerFailureTime = failureTime;
 
+
+    if (this.mapBuilder) {
+        this.mapBuilder.setBlackout(isOut);
+    }
+
     if (isOut) {
-      this.lights.setAmbientColor(0x050505); // Near black
+      this.lights.setAmbientColor(0x000000);
       if (!this.playerLight) {
         this.playerLight = this.lights.addLight(0, 0, 120, 0xffffff, 1.5);
       } else {

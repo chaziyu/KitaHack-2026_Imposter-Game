@@ -110,6 +110,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         highlight: false,
         arrow: false
     },
+    // --- NEW CONTROL GUIDE ADDED HERE ---
+    {
+        id: 'controls',
+        target: 'game-canvas',
+        position: 'center',
+        title: 'How to Move & Play 🎮',
+        description: '⌨️ MOVEMENT: Use W, A, S, D keys to walk around.\n\n📍 INTERACT: Simply walk onto any Station Icon to start the task or tutorial automatically!',
+        highlight: false,
+        arrow: false
+    },
+    // ------------------------------------
     {
         id: 'academies',
         target: 'academy-stations',
@@ -135,7 +146,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         title: 'Need Help? Ask Professor Gaia! 💡',
         description: 'Stuck on code? Professor Gaia can help detect bugs and guide you! (Extra helpful in Kids Mode)',
         highlight: true,
-        arrow: false
+        arrow: true // Changed to true to make it more obvious
     },
     {
         id: 'detective-work',

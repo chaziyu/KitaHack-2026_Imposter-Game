@@ -53,20 +53,29 @@ const executeJavaScript = async (sourceCode: string, expectedOutput: string): Pr
 
 // Simulation for Python (SolarOptimizer.py)
 const executePythonStats = async (sourceCode: string, expectedOutput: string): Promise<ExecutionResult> => {
-    // Regex to check if they are returning a + b
-    const hasCorrectReturn = /return\s+a\s*\+\s*b/.test(sourceCode);
-    // Regex to check if they are printing the result
-    const hasPrint = /print\s*\(\s*get_total_output\s*\(/.test(sourceCode);
+    // Regex to check if they are returning a + b (allows spaces and optional parens)
+    // Matches: "return a + b", "return(a+b)", "return a+b"
+    const hasCorrectReturn = /return\s*\(?\s*a\s*\+\s*b\s*\)?/.test(sourceCode);
 
-    if (hasCorrectReturn && hasPrint) {
+    // Check if function is called AND result is printed (flexible order)
+    const hasFunctionCall = /get_total_output\s*\(/.test(sourceCode);
+    const hasPrint = /print\s*\(/.test(sourceCode);
+
+    if (hasCorrectReturn && hasFunctionCall && hasPrint) {
         return { success: true, output: `✅ Passed!\nOutput:\n${expectedOutput}` };
     }
+
+    // Debugging logs
+    console.log("Python Check Failed:", { hasCorrectReturn, hasFunctionCall, hasPrint, sourceCode });
 
     if (!hasCorrectReturn) {
         return { success: false, output: `❌ Failed.\nTip: Did you return 'a + b'?` };
     }
+    if (!hasFunctionCall) {
+        return { success: false, output: `❌ Failed.\nTip: You need to call 'get_total_output(a, b)'.` };
+    }
     if (!hasPrint) {
-        return { success: false, output: `❌ Failed.\nTip: Did you 'print' the result of the function?` };
+        return { success: false, output: `❌ Failed.\nTip: You need to 'print()' the result.` };
     }
 
     return { success: false, output: `❌ Failed.\nLogic does not seem correct.` };
@@ -75,12 +84,15 @@ const executePythonStats = async (sourceCode: string, expectedOutput: string): P
 // Simulation for C++ (O2Scrubber.cpp)
 const executeCppStats = async (sourceCode: string, expectedOutput: string): Promise<ExecutionResult> => {
     // Regex to check for std::cout << "Oxy-System: ACTIVE"
+    // Allows flexible spacing around << and within the string if needed (though string usually strict)
     const hasPrint = /std::cout\s*<<\s*"Oxy-System:\s*ACTIVE"/.test(sourceCode);
     const hasEndl = /<<\s*std::endl/.test(sourceCode);
 
     if (hasPrint && hasEndl) {
         return { success: true, output: `✅ Passed!\nOutput:\n${expectedOutput}` };
     }
+
+    console.log("CPP Check Failed:", { hasPrint, hasEndl, sourceCode });
 
     return {
         success: false,

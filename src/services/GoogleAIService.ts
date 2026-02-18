@@ -11,26 +11,24 @@ const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY;
 // Model fallback priorities for different AI features
 
 // Chaos Engine & Green Code Analyzer: Prioritize intelligence (27B first)
+// Chaos Engine & Green Code Analyzer: Prioritize intelligence (27B first)
 const CHAOS_ENGINE_MODELS = [
     'gemma-3-27b-it',  // Most capable for complex bug generation
     'gemma-3-12b-it',  // Good balance
-    'gemma-3-4b-it',   // Faster
-    'gemma-3-2b-it'    // Fastest/Fallback
+    'gemma-3-4b-it'    // Fastest/Fallback
 ];
 
-// Professor Gaia: Prioritize speed (12B first for faster hints)
+// Professor Gaia: Prioritize speed (4B first, as 2B is not available)
 const PROFESSOR_GAIA_MODELS = [
-    'gemma-3-12b-it',  // Faster responses for real-time hints
-    'gemma-3-4b-it',   // Even faster
-    'gemma-3-2b-it'    // Fastest/Fallback
+    'gemma-3-4b-it',   // Fastest available response
+    'gemma-3-12b-it',  // Balanced
+    'gemma-3-27b-it'   // Slow fallback
 ];
 
-// Green Code Analyzer: Prioritize 27B for depth/quality as requested
-// Green Code Analyzer: Prioritize speed per user request (10s+ is too long)
+// Green Code Analyzer: Prioritize speed per user request
 const GREEN_CODE_MODELS = [
-    'gemma-3-2b-it',   // Fastest possible model
-    'gemma-3-4b-it',   // Very Fast backup
-    'gemma-3-12b-it',  // Good balance
+    'gemma-3-4b-it',   // Fastest available model
+    'gemma-3-12b-it',  // Very Fast backup
     'gemma-3-27b-it'   // Slow fallback
 ];
 

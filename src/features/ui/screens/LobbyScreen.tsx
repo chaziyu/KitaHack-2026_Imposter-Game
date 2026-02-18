@@ -4,7 +4,7 @@ import { db } from '../../../firebaseConfig';
 import { ref, onValue, update } from 'firebase/database';
 import { PlanetDashboard } from '../PlanetDashboard';
 import { RoleRevealModal } from '../modals/RoleRevealModal';
-import { assignRoles, syncRolesToFirebase, getPlayerRole } from '../../../utils/RoleManager';
+import { assignRoles, getPlayerRole } from '../../../utils/RoleManager';
 import { LEVEL_1_PROBLEMS } from '../../../shared/ProblemData';
 
 import { usePlayerStore } from '../../../stores/usePlayerStore';

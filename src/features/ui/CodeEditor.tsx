@@ -6,12 +6,12 @@ import { executeCode } from '../game/CodeRunner';
 import { LEVEL_1_PROBLEMS } from '../../shared/ProblemData';
 import Editor from '@monaco-editor/react';
 import { ChallengeAnimation } from './ChallengeAnimation';
-import { SDGBadgeGroup } from './SDGBadge';
+import { SDGBadgeGroup } from './components/SDGBadge';
 import { MentorChat } from './MentorChat';
 import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { aiChallengeService } from '../../services/AIChallengeService';
-import { SDGPopup } from './SDGPopup';
-import { CodeReviewModal } from './CodeReviewModal';
+import { SDGPopup } from './modals/SDGPopup';
+import { CodeReviewModal } from './modals/CodeReviewModal';
 import { GreenCoderScoreModal } from './GreenCoderScoreModal';
 import type { GreenCoderScore } from '../../types/ai-levels';
 

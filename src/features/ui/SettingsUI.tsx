@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../../stores/useGameStore';
-import { FeedbackModal } from './FeedbackModal';
+import { FeedbackModal } from './modals/FeedbackModal';
 
 export const SettingsUI = () => {
     const { bgmVolume, sfxVolume, setBgmVolume, setSfxVolume } = useGameStore();

@@ -19,12 +19,15 @@ export const TaskBoard = () => {
             const data = snapshot.val();
             if (data) {
                 // Convert the file list into an array of tasks
-                const taskList = Object.entries(data).map(([key, file]: [string, { name?: string; testStatus?: string; description?: string }]) => ({
-                    id: key,
-                    name: file.name,
-                    status: file.testStatus || 'PENDING', // PENDING, PASS, FAIL
-                    desc: file.description || "Fix the code."
-                }));
+                const taskList = Object.entries(data).map(([key, file]) => {
+                    const f = file as { name?: string; testStatus?: string; description?: string };
+                    return {
+                        id: key,
+                        name: f.name ?? key,
+                        status: f.testStatus || 'PENDING',
+                        desc: f.description || "Fix the code."
+                    };
+                });
                 setTasks(taskList);
             }
         });

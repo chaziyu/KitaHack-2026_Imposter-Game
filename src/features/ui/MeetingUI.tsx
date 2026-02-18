@@ -40,8 +40,11 @@ export const MeetingUI = () => {
         }
     }, [status]);
 
-    // Editor Ref
-    const editorRef = React.useRef<unknown>(null);
+    // Editor Ref — typed to the Monaco editor instance interface we actually use
+    const editorRef = React.useRef<{
+        getModel: () => { deltaDecorations: (old: string[], next: unknown[]) => string[] } | null;
+        revealLineInCenter: (line: number) => void;
+    } | null>(null);
     const decorationsRef = React.useRef<string[]>([]);
 
     useEffect(() => {

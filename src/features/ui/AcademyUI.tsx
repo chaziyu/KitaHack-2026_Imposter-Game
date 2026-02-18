@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../../stores/useGameStore';
-import { MiniRepl } from './MiniRepl';
-import { SDGBadgeGroup } from './SDGBadge';
+import { MiniRepl } from './components/MiniRepl';
+import { SDGBadgeGroup } from './components/SDGBadge';
 
 interface AcademyLesson {
     id: string;

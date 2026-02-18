@@ -1,6 +1,6 @@
 import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { useGlobalImpact } from '../../hooks/useGlobalImpact';
-import { SDGBadgeGroup } from './SDGBadge';
+import { SDGBadgeGroup } from './components/SDGBadge';
 
 export const PlanetDashboard = () => {
     const { totalImpact, getCompletionPercentage } = usePlayerProgress();

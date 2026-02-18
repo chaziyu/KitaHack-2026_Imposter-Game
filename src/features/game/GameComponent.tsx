@@ -2,35 +2,15 @@ import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
 import { PreloadScene } from './scenes/PreloadScene';
-import { useMeetingStore } from '../../stores/useMeetingStore';
 import { useGameStore } from '../../stores/useGameStore';
 import { SettingsUI } from '../ui/SettingsUI';
 
 export const GameComponent = () => {
   const gameRef = useRef<Phaser.Game | null>(null);
-  const status = useMeetingStore((state) => state.status);
 
-  useEffect(() => {
-    if (!gameRef.current) return;
-    const scene = gameRef.current.scene.getScene('MainScene') as MainScene;
-    if (!scene) return;
-
-    if (status === 'DISCUSSION') {
-      // Auto-end meeting check
-      const interval = setInterval(() => {
-        const { meetingEndTime } = useMeetingStore.getState();
-        if (Date.now() > meetingEndTime) {
-          const network = useGameStore.getState().network;
-          if (network) network.endMeeting();
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-
-    } else if (status === 'IDLE') {
-      // Idle state
-    }
-  }, [status]);
+  // Meeting auto-end timer is handled by MeetingUI.tsx (which has the correct timer logic).
+  // Removed duplicate/broken timer that always returned early because gameRef.current
+  // is null on first render before Phaser initializes.
 
   useEffect(() => {
     if (gameRef.current) return; // Prevent double-init

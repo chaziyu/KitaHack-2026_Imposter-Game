@@ -27,12 +27,17 @@ export const executeCode = async (language: string, sourceCode: string, expected
 
         const data = await response.json();
 
-        // 3. Check for Runtime Errors
-        if (data.run && data.run.stderr) {
+        // 3. Check for missing run field (compile error or API issue)
+        if (!data.run) {
+            return { success: false, output: `❌ Compiler Error:\n${data.compile?.stderr || 'No output from compiler.'}` };
+        }
+
+        // 4. Check for Runtime Errors
+        if (data.run.stderr) {
             return { success: false, output: `❌ Error:\n${data.run.stderr}` };
         }
 
-        // 4. Compare Output (Trim whitespace to be safe)
+        // 5. Compare Output (Trim whitespace to be safe)
         const actualOutput = data.run.stdout.trim();
         const expected = expectedOutput.trim();
 

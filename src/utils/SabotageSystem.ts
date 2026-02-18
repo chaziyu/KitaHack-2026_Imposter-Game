@@ -183,7 +183,7 @@ export async function triggerSabotage(
                 triggeredBy: targetPlayerId
             };
         } else {
-            updates[`gamestate/files/${fileId}`] = {
+            updates[`rooms/${roomCode}/gamestate/files/${fileId}`] = {
                 content: result.newCode,
                 // Critical: Mark as corrupted so Deploy Terminal detects it!
                 isCorrupted: true,

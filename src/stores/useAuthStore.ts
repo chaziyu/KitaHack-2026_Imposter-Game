@@ -47,9 +47,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 const { usePlayerProgress } = await import('../stores/usePlayerProgress');
                 usePlayerProgress.getState().loadFromCloud(savedProgress);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             set({
-                error: error.message || 'Login failed',
+                error: (error as Error).message || 'Login failed',
                 isLoading: false
             });
             throw error;
@@ -84,8 +84,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 isAuthenticated: false,
                 error: null
             });
-        } catch (error: any) {
-            set({ error: error.message || 'Logout failed' });
+        } catch (error: unknown) {
+            set({ error: (error as Error).message || 'Logout failed' });
             throw error;
         }
     },

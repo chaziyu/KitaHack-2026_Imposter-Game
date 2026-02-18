@@ -36,6 +36,16 @@ export const MeetingUI = () => {
     const [chatInput, setChatInput] = useState('');
     const [hasVoted, setHasVoted] = useState(false);
 
+    // Guard: prevent handleMeetingEnd from firing more than once per meeting
+    const hasEndedRef = React.useRef(false);
+
+    // Reset the guard when meeting goes back to IDLE
+    useEffect(() => {
+        if (status === 'IDLE') {
+            hasEndedRef.current = false;
+        }
+    }, [status]);
+
     // Editor Ref
     const editorRef = React.useRef<any>(null);
     const decorationsRef = React.useRef<string[]>([]);
@@ -47,6 +57,8 @@ export const MeetingUI = () => {
     // Host Logic: Calculate Results
     const handleMeetingEnd = React.useCallback(async () => {
         if (!roomCode) return;
+        if (hasEndedRef.current) return; // Already ended — prevent double-fire
+        hasEndedRef.current = true;
 
         const voteCounts: Record<string, number> = {};
         let skipCount = 0;

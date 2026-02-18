@@ -50,7 +50,7 @@ export class FirebaseAdapter implements NetworkService {
       });
 
       // console.log('[Firebase] Player write success');
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Firebase] Player write failed', e);
       toast.error('Failed to save player data. Please check your connection.');
     }
@@ -130,7 +130,7 @@ export class FirebaseAdapter implements NetworkService {
   startMeeting(callerId: string): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
-    
+
     // CHANGED: Use 'set' instead of 'update'
     // 'set' completely wipes the previous meeting data (votes, chat, results)
     // and starts fresh.
@@ -142,16 +142,16 @@ export class FirebaseAdapter implements NetworkService {
       highlightedLine: null,
       votes: {}, // Now this actually ensures votes are empty!
       chat: {},  // This also clears the chat for the new meeting (optional, but cleaner)
-      result: null 
+      result: null
     });
   }
 
   endMeeting(): void {
     if (!this.roomCode) return;
     const meetingRef = this.getRoomRef('meeting');
-    
+
     // 30 Second Cooldown
-    const COOLDOWN_SECONDS = 30; 
+    const COOLDOWN_SECONDS = 30;
 
     // Use 'set' to reset state AND add the cooldown timer
     set(meetingRef, {
@@ -162,9 +162,9 @@ export class FirebaseAdapter implements NetworkService {
       votes: {},
       chat: {},
       result: null,
-      
+
       // ADD THIS LINE:
-      cooldownEnd: Date.now() + (COOLDOWN_SECONDS * 1000) 
+      cooldownEnd: Date.now() + (COOLDOWN_SECONDS * 1000)
     });
   }
 
@@ -234,7 +234,7 @@ export class FirebaseAdapter implements NetworkService {
         const notif = Object.values(data)[0] as { message: string, type: string, timestamp: number };
         // Only show if it's recent (within last 5 seconds) to avoid spam on join
         if (notif.timestamp > Date.now() - 5000) {
-          callback(notif.message, notif.type as any);
+          callback(notif.message, notif.type as 'success' | 'error' | 'info');
         }
       }
     });

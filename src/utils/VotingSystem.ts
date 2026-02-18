@@ -94,6 +94,9 @@ export async function startMeeting(
 
 /**
  * End a meeting and process results
+ * @deprecated This function is NOT used by the live game. MeetingUI.handleMeetingEnd() is the
+ * authoritative implementation (uses jail logic, not eject). Calling this would conflict with
+ * the live meeting state. Kept for reference only.
  */
 export async function endMeeting(
     roomCode: string

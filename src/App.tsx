@@ -1,19 +1,17 @@
 import { GameComponent } from "./features/game/GameComponent";
-import { CodeEditor } from "./features/ui/CodeEditor";
-import { CentralTerminal } from "./features/ui/screens/CentralTerminal";
 import { useGameStore } from "./stores/useGameStore";
 import { TaskBoard } from "./features/ui/components/TaskBoard";
 import { LevelManager } from "./features/game/LevelManager";
 import { MeetingUI } from "./features/ui/MeetingUI";
 import { MainMenu } from "./features/ui/screens/MainMenu";
 import { LobbyScreen } from "./features/ui/screens/LobbyScreen";
-import { AcademyUI } from "./features/ui/AcademyUI";
 import { IntroAnimation } from "./features/ui/IntroAnimation";
 import { TutorialOverlay } from "./features/ui/TutorialOverlay";
 import { VictoryAnimation } from "./features/ui/VictoryAnimation";
 import { LoginScreen } from "./features/ui/screens/LoginScreen";
 import { RedemptionScreen } from "./features/ui/screens/RedemptionScreen";
 import { VictoryScreen } from "./features/ui/screens/VictoryScreen";
+
 import { CyberBackground } from "./features/ui/components/CyberBackground";
 import { BootLoader } from "./features/ui/BootLoader";
 import { AnimatePresence, motion } from "framer-motion";
@@ -28,7 +26,7 @@ import { GlobalMentor } from "./features/ui/GlobalMentor";
 // Lazy Load Heavy Components
 import { lazy, Suspense } from 'react';
 const CodeEditor = lazy(() => import("./features/ui/CodeEditor").then(module => ({ default: module.CodeEditor })));
-const CentralTerminal = lazy(() => import("./features/ui/CentralTerminal").then(module => ({ default: module.CentralTerminal })));
+const CentralTerminal = lazy(() => import("./features/ui/screens/CentralTerminal").then(module => ({ default: module.CentralTerminal })));
 const AcademyUI = lazy(() => import("./features/ui/AcademyUI").then(module => ({ default: module.AcademyUI })));
 const SabotageMenu = lazy(() => import("./features/ui/SabotageMenu").then(module => ({ default: module.SabotageMenu })));
 
@@ -43,7 +41,7 @@ import { DEMO_MODE } from "./config/demoMode";
 
 function App() {
   const { isTerminalOpen, terminalType, gameState, network, roomCode, isHost, playerId, activeFileId } = useGameStore();
-  const { shouldShowIntro, shouldShowTutorial } = usePlayerProgress();
+  const { shouldShowIntro, shouldShowTutorial, completedChallenges, hasSeenVictory, shouldShowVictory } = usePlayerProgress();
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
   const [showVictory, setShowVictory] = useState(false);
   const playerRole = usePlayerRole(roomCode, playerId);

@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import { addToGlobalImpact } from '../services/GlobalImpactService';
 
+interface CloudProgressData {
+    hasSeenIntro?: boolean;
+    hasCompletedTutorial?: boolean;
+    hasSeenVictory?: boolean;
+    completedChallenges?: string[];
+    achievements?: Achievement[];
+    totalImpact?: Partial<EnvironmentalImpact>;
+    currentTutorialStep?: number;
+    tutorialCompleted?: boolean;
+    firstPlayedAt?: number;
+    lastPlayedAt?: number;
+}
+
 export interface Achievement {
     id: string;
     name: string;
@@ -48,7 +61,7 @@ interface PlayerProgress {
     addImpact: (impact: Partial<EnvironmentalImpact>) => void;
     markVictorySeen: () => void;
     resetProgress: () => void;
-    loadFromCloud: (cloudData: any) => void; // Sync from Firebase
+    loadFromCloud: (cloudData: CloudProgressData) => void; // Sync from Firebase
 
     // Computed getters
     isAllChallengesComplete: () => boolean;
@@ -180,7 +193,7 @@ export const usePlayerProgress = create<PlayerProgress>((set, get) => ({
                         completedChallenges: state.completedChallenges,
                         totalImpact: state.totalImpact,
                         lastPlayedAt: Date.now()
-                    } as any).catch(err => {
+                    }).catch(err => {
                         console.error('Failed to sync user progress:', err);
                     });
                 });
@@ -240,7 +253,7 @@ export const usePlayerProgress = create<PlayerProgress>((set, get) => ({
         lastPlayedAt: Date.now()
     }),
 
-    loadFromCloud: (cloudData: any) => {
+    loadFromCloud: (cloudData: CloudProgressData) => {
         // Sync Firebase data to local state
         set({
             hasSeenIntro: cloudData.hasSeenIntro || false,

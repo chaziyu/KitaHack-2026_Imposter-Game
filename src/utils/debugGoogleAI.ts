@@ -6,7 +6,7 @@ export function checkGoogleAIStatus() {
     console.log('API Key present:', !!apiKey);
     console.log('API Key length:', apiKey?.length || 0);
     console.log('API Key first 10 chars:', apiKey?.substring(0, 10) || 'N/A');
-    console.log('API URL:', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent');
+    console.log('API URL:', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
 
     if (!apiKey) {
         console.error('❌ VITE_GOOGLE_AI_API_KEY not found!');

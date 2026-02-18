@@ -13,23 +13,23 @@ const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY;
 // Chaos Engine & Green Code Analyzer: Prioritize intelligence (27B first)
 // Chaos Engine & Green Code Analyzer: Prioritize intelligence (27B first)
 const CHAOS_ENGINE_MODELS = [
-    'gemma-3-27b-it',  // Most capable for complex bug generation
-    'gemma-3-12b-it',  // Good balance
-    'gemma-3-4b-it'    // Fastest/Fallback
+    'gemini-2.5-flash',  // Most capable currently available
+    'gemini-2.5-flash',  // Fallback 1
+    'gemini-2.5-flash'    // Fallback 2
 ];
 
 // Professor Gaia: Prioritize speed (4B first, as 2B is not available)
 const PROFESSOR_GAIA_MODELS = [
-    'gemma-3-4b-it',   // Fastest available response
-    'gemma-3-12b-it',  // Balanced
-    'gemma-3-27b-it'   // Slow fallback
+    'gemini-2.5-flash',   // Fastest available response
+    'gemini-2.5-flash',  // Balanced
+    'gemini-2.5-flash'   // Slow fallback
 ];
 
 // Green Code Analyzer: Prioritize speed per user request
 const GREEN_CODE_MODELS = [
-    'gemma-3-4b-it',   // Fastest available model
-    'gemma-3-12b-it',  // Very Fast backup
-    'gemma-3-27b-it'   // Slow fallback
+    'gemini-2.5-flash',   // Fastest available model
+    'gemini-2.5-flash',  // Very Fast backup
+    'gemini-2.5-flash'   // Slow fallback
 ];
 
 // ... (skipping unchanged code)
@@ -75,7 +75,7 @@ interface GeminiResponse {
  * Generic API call with custom model priority list
  * Attempts models in order until one succeeds
  */
-async function callGemmaWithModelList(prompt: string, config: GenerationConfig, modelList: string[]): Promise<GeminiResponse> {
+async function callGeminiWithModelList(prompt: string, config: GenerationConfig, modelList: string[]): Promise<GeminiResponse> {
     let lastError: Error | null = null;
 
     for (const model of modelList) {
@@ -116,14 +116,14 @@ async function callGemmaWithModelList(prompt: string, config: GenerationConfig, 
  * Chaos Engine fallback (27B → 12B → 4B → 2B)
  */
 async function callChaosEngine(prompt: string, config: GenerationConfig): Promise<GeminiResponse> {
-    return callGemmaWithModelList(prompt, config, CHAOS_ENGINE_MODELS);
+    return callGeminiWithModelList(prompt, config, CHAOS_ENGINE_MODELS);
 }
 
 /**
  * Professor Gaia fallback (12B → 4B → 2B)
  */
 async function callProfessorGaia(prompt: string, config: GenerationConfig): Promise<GeminiResponse> {
-    return callGemmaWithModelList(prompt, config, PROFESSOR_GAIA_MODELS);
+    return callGeminiWithModelList(prompt, config, PROFESSOR_GAIA_MODELS);
 }
 
 // Enhanced debugging for API key issues
@@ -651,7 +651,7 @@ export async function analyzeGreenCode(request: GreenCoderRequest): Promise<Gree
     try {
         const prompt = buildGreenCoderPrompt(request);
 
-        const data = await callGemmaWithModelList(prompt, {
+        const data = await callGeminiWithModelList(prompt, {
             temperature: 0.2, // Very low temp for speed/determinism
             maxOutputTokens: 1024, // Increased to prevent truncation (was 500)
         }, GREEN_CODE_MODELS);

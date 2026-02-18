@@ -117,7 +117,7 @@ export const usePlayerProgress = create<PlayerProgress>((set, get) => ({
             lastPlayedAt: Date.now()
         });
 
-        console.log(`[Progress] Challenge ${challengeId} un-completed due to sabotage/failure.`);
+        // console.log(`[Progress] Challenge ${challengeId} un-completed due to sabotage/failure.`);
     },
 
     completeChallenge: (challengeId: string) => {
@@ -257,7 +257,7 @@ export const usePlayerProgress = create<PlayerProgress>((set, get) => ({
             firstPlayedAt: cloudData.firstPlayedAt || Date.now(),
             lastPlayedAt: cloudData.lastPlayedAt || Date.now()
         });
-        console.log('Loaded progress from Firebase');
+        // console.log('Loaded progress from Firebase');
     },
 
     // Computed

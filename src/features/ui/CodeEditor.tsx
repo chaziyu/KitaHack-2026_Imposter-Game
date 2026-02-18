@@ -12,6 +12,8 @@ import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { aiChallengeService } from '../../services/AIChallengeService';
 import { SDGPopup } from './SDGPopup';
 import { CodeReviewModal } from './CodeReviewModal';
+import { GreenCoderScoreModal } from './GreenCoderScoreModal';
+import type { GreenCoderScore } from '../../types/ai-levels';
 
 import { usePlayerRole } from '../../hooks/usePlayerRole';
 import toast, { Toaster } from 'react-hot-toast';
@@ -33,6 +35,10 @@ export const CodeEditor = () => {
     const [aiFeedback, setAiFeedback] = useState<{ rating: number, feedback: string, tip: string } | null>(null);
     const [isReviewing, setIsReviewing] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
+
+    // Green Coder Score State
+    const [greenScore, setGreenScore] = useState<GreenCoderScore | null>(null);
+    const [showGreenScoreModal, setShowGreenScoreModal] = useState(false);
 
     // SDG Popup State
     const [completedSdg, setCompletedSdg] = useState<number | null>(null);
@@ -169,6 +175,28 @@ export const CodeEditor = () => {
             testStatus: newStatus,
             isCorrupted: isCorrupted
         });
+
+        // BACKGROUND PRE-FETCH: If Hero passes, silently trigger Green Coder analysis
+        if (newStatus === 'PASS' && playerRole === 'hero' && activeFileId && problem) {
+            // Non-blocking trigger
+            (async () => {
+                try {
+                    const solution = problem.solutionCode || "";
+                    const greenResult = await aiChallengeService.getGreenCoderScore(
+                        code,
+                        problem.description,
+                        solution,
+                        problem.language
+                    );
+                    if (greenResult.success && greenResult.score) {
+                        setGreenScore(greenResult.score);
+                        lastReviewedCodeRef.current = code;
+                    }
+                } catch (e) {
+                    console.warn("Background analysis failed:", e);
+                }
+            })();
+        }
     };
 
     // Open Mentor Chat
@@ -176,29 +204,59 @@ export const CodeEditor = () => {
         setShowMentorChat(true);
     };
 
-    // Request AI Code Review
+    // Request AI Green Code Analysis
     const handleRequestReview = async () => {
         if (!activeFileId || !problem || code.length < 10) return;
 
+        // Caching: Avoid redundant calls if code hasn't changed
+        if (code === lastReviewedCodeRef.current && greenScore) {
+            setShowGreenScoreModal(true);
+            return;
+        }
+
         setIsReviewing(true);
-        setShowReviewModal(true);
+        setGreenScore(null);
         setAiFeedback(null);
 
-        const review = await aiChallengeService.submitForReview(activeFileId, code);
+        try {
+            // Priority: Try Green Coder Analysis first (The "Impact" Feature)
+            const solution = problem.solutionCode || "";
+            const greenResult = await aiChallengeService.getGreenCoderScore(
+                code,
+                problem.description,
+                solution,
+                problem.language
+            );
 
-        if (review.success) {
-            setAiFeedback({
-                rating: review.rating,
-                feedback: review.feedback,
-                tip: review.tip
-            });
+            if (greenResult.success && greenResult.score) {
+                setGreenScore(greenResult.score);
+                lastReviewedCodeRef.current = code; // Update cache
+                setShowGreenScoreModal(true);
+            } else {
+                // Fallback to standard review if Green Coder fails
+                const review = await aiChallengeService.submitForReview(activeFileId, code);
+                if (review.success) {
+                    setAiFeedback({
+                        rating: review.rating,
+                        feedback: review.feedback,
+                        tip: review.tip
+                    });
+                    lastReviewedCodeRef.current = code; // Update cache
+                    setShowReviewModal(true);
+                }
+            }
+        } catch (error) {
+            console.error("Review failed:", error);
+            toast.error("Could not analyze code impact.");
+        } finally {
+            setIsReviewing(false);
         }
-        setIsReviewing(false);
     };
 
 
     // State for Error Decoder
     const [lastError, setLastError] = useState<string | null>(null);
+    const lastReviewedCodeRef = useRef<string>('');
 
     // Monaco Editor OnMount - Register Eco-Lens
     const handleEditorDidMount = (_editor: any, monaco: any) => {
@@ -308,12 +366,12 @@ export const CodeEditor = () => {
                             onClick={handleRequestReview}
                             disabled={isReviewing || status !== 'PASS'}
                             className={`px-3 py-1 text-xs rounded flex items-center gap-1 transition-colors ${status === 'PASS' && !isReviewing
-                                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                ? 'bg-teal-600 hover:bg-teal-500 text-white'
                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
-                            title={status !== 'PASS' ? 'Pass the challenge first!' : 'Get AI code review'}
+                            title={status !== 'PASS' ? 'Pass the challenge first!' : 'Analyze Environmental Impact'}
                         >
-                            {isReviewing ? '⏳ Reviewing...' : '🎓 Get Code Review'}
+                            {isReviewing ? '⏳ Analyzing...' : '🌱 Check Green Score'}
                         </button>
                         <button
                             onClick={handleOpenMentorChat}
@@ -336,22 +394,55 @@ export const CodeEditor = () => {
                 {problem && (
                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-3 border-b border-gray-700">
                         <div className="flex gap-4 items-start">
-                            <div className="flex-1">
+                            <div className="flex-[1.5]">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-blue-400 text-xs font-bold">🌍 YOUR MISSION:</span>
+                                    <span className="text-blue-400 text-[10px] font-bold tracking-wider underline decoration-blue-500/50">🌍 THE SCENARIO</span>
                                 </div>
-                                <p className="text-gray-300 text-xs leading-relaxed">{problem.storyContext}</p>
+                                <p className="text-gray-300 text-xs leading-relaxed font-medium">{problem.storyContext}</p>
                             </div>
+
                             <div className="flex-1 border-l border-gray-700 pl-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-green-400 text-xs font-bold">🎯 LEARNING:</span>
+                                    <span className="text-green-400 text-[10px] font-bold tracking-wider underline decoration-green-500/50">🎯 LEARNING GOALS</span>
                                 </div>
-                                <p className="text-gray-300 text-xs leading-relaxed">{problem.detailedInstructions.split('\n')[0]}</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {problem.concepts.map((concept, i) => (
+                                        <span key={i} className="text-[10px] bg-green-900/30 text-green-300 px-1.5 py-0.5 rounded border border-green-700/50">
+                                            {concept}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex-[1.2] border-l border-gray-700 pl-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-yellow-400 text-[10px] font-bold tracking-wider underline decoration-yellow-500/50">📝 YOUR MISSION</span>
+                                </div>
+                                <div className="text-gray-300 text-[10px] leading-tight space-y-1">
+                                    {problem.detailedInstructions.split('\n')
+                                        .filter(line => line.trim() && !line.includes('🎯 Your Mission:') && !line.includes('💡 Think:'))
+                                        .map((line, i) => (
+                                            <div key={i} className="flex gap-1">
+                                                <span>•</span>
+                                                <span>{line.replace(/^\d+\.\s*/, '').trim()}</span>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
                             </div>
                         </div>
-                        <div className="mt-2 bg-green-900/20 rounded px-2 py-1 border-l-2 border-green-500">
-                            <span className="text-green-400 text-[10px] font-bold">💚 IMPACT: </span>
-                            <span className="text-gray-300 text-[10px]">{problem.environmentalImpact}</span>
+
+                        <div className="mt-3 flex gap-2">
+                            <div className="flex-1 bg-teal-900/20 rounded px-2 py-1.5 border-l-2 border-teal-500 flex items-center gap-2">
+                                <span className="text-teal-400 text-[10px] font-bold whitespace-nowrap">✨ IMPACT:</span>
+                                <span className="text-gray-300 text-[10px] italic line-clamp-1">{problem.environmentalImpact}</span>
+                            </div>
+                            {problem.failureConsequence && (
+                                <div className="flex-1 bg-red-900/20 rounded px-2 py-1.5 border-l-2 border-red-500 flex items-center gap-2">
+                                    <span className="text-red-400 text-[10px] font-bold whitespace-nowrap">⚠️ STAKES:</span>
+                                    <span className="text-red-200 text-[10px] italic line-clamp-1">{problem.failureConsequence}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -416,14 +507,16 @@ export const CodeEditor = () => {
             />
 
             {/* SDG Achievement Popup */}
-            {completedSdg && problem && (
-                <SDGPopup
-                    sdgId={completedSdg}
-                    title="Goal Progress!"
-                    description={`Great work! Your code for ${problem.name} contributed to this global goal.`}
-                    onClose={() => setCompletedSdg(null)}
-                />
-            )}
+            {
+                completedSdg && problem && (
+                    <SDGPopup
+                        sdgId={completedSdg}
+                        title="Goal Progress!"
+                        description={`Great work! Your code for ${problem.name} contributed to this global goal.`}
+                        onClose={() => setCompletedSdg(null)}
+                    />
+                )
+            }
 
             {/* Code Review Modal */}
             <CodeReviewModal
@@ -434,6 +527,21 @@ export const CodeEditor = () => {
                 tip={aiFeedback?.tip || ''}
                 isLoading={isReviewing}
             />
+
+            {/* Green Coder Score Modal (The Impact Feature) */}
+            {
+                greenScore && problem && (
+                    <GreenCoderScoreModal
+                        isVisible={showGreenScoreModal}
+                        onClose={() => setShowGreenScoreModal(false)}
+                        score={greenScore}
+                        stakes={{
+                            success: problem.successReward || "Optimization Complete!",
+                            failure: problem.failureConsequence || "Needs Optimization."
+                        }}
+                    />
+                )
+            }
 
 
 
@@ -464,6 +572,6 @@ export const CodeEditor = () => {
                     z-index: 1;
                 }
             `}</style>
-        </div>
+        </div >
     );
 };

@@ -1,4 +1,4 @@
-import { generateSabotage, reviewCode } from './GoogleAIService';
+import { generateSabotage, reviewCode, analyzeGreenCode } from './GoogleAIService';
 
 interface CachedSabotage {
     challengeId: string;
@@ -17,7 +17,7 @@ class AIChallengeService {
     async prepareSabotage(challengeId: string, baseCode: string, concept: string): Promise<void> {
         if (this.cache.has(challengeId)) return;
 
-        console.log(`[AI] Preparing sabotage for ${challengeId}...`);
+        // console.log(`[AI] Preparing sabotage for ${challengeId}...`);
         const result = await generateSabotage({
             baseCode,
             level: 'medium',
@@ -32,7 +32,7 @@ class AIChallengeService {
                 type: result.sabotageType,
                 timestamp: Date.now()
             });
-            console.log(`[AI] Sabotage ready: ${result.sabotageType}`);
+            // console.log(`[AI] Sabotage ready: ${result.sabotageType}`);
         }
     }
 
@@ -55,6 +55,18 @@ class AIChallengeService {
         return await reviewCode({
             code,
             originalChallenge: challengeId
+        });
+    }
+
+    /**
+     * Gets the Green Coder Score for a solution
+     */
+    async getGreenCoderScore(code: string, challengeDescription: string, solutionCode: string, language: string) {
+        return await analyzeGreenCode({
+            player_code: code,
+            solution_code: solutionCode,
+            challenge_description: challengeDescription,
+            language: language as any
         });
     }
 }

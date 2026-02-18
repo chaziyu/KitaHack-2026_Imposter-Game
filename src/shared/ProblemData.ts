@@ -7,6 +7,8 @@ export interface CodingChallenge {
     environmentalImpact: string;
     storyContext: string;
     realWorldConnection: string;
+    failureConsequence: string; // NEW: What happens if you fail/write inefficient code?
+    successReward: string;      // NEW: The specific positive outcome of your fix
 
     // Educational Content
     difficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -17,6 +19,7 @@ export interface CodingChallenge {
     // Code Content
     content: string;
     expectedOutput: string;
+    solutionCode: string; // NEW: Required for Green Coder Analysis
     testStatus: 'PENDING' | 'PASS' | 'FAIL';
     isCorrupted?: boolean;
 
@@ -36,6 +39,8 @@ export const LEVEL_1_PROBLEMS: Record<string, CodingChallenge> = {
         environmentalImpact: "Every solar panel we optimize prevents 2 tons of CO₂ emissions per year!",
         storyContext: "🌅 A remote village needs 15 units of electricity to power their school and clinic. You have 2 solar panel arrays: one generates 5 units, another generates 10 units. Can you calculate if they have enough clean energy?",
         realWorldConnection: "Real solar engineers write code like this every day to plan renewable energy systems that reduce pollution and fight climate change!",
+        failureConsequence: "⚠️ CRITICAL: If this calculation is wrong, the village clinic will lose power tonight.",
+        successReward: "🎉 VICTORY: You've confirmed 15 units of clean energy! The clinic lights are ON.",
 
         // Challenge Content
         description: "Help the village! Calculate total solar energy from two arrays.",
@@ -57,6 +62,12 @@ b = 10  # Second solar array
 # This will tell us if the village has enough power!
 `,
         expectedOutput: "15",
+        solutionCode: `def get_total_output(a, b):
+    return a + b
+
+a = 5
+b = 10
+print(get_total_output(a, b))`,
         testStatus: "FAIL",
 
         hints: [
@@ -77,6 +88,8 @@ b = 10  # Second solar array
         environmentalImpact: "Automated recycling reduces landfill waste by 75% and saves thousands of trees!",
         storyContext: "♻️ Your city's recycling plant needs help! 5 trucks full of recyclable materials just arrived (numbered 0 to 4). You need to program the sorting robot to check each truck one by one. If you don't, the materials go to the landfill!",
         realWorldConnection: "Modern recycling facilities use robotic systems programmed with loops just like this to automatically sort millions of items every day, keeping plastic out of oceans and reducing pollution!",
+        failureConsequence: "⚠️ CRITICAL: Inefficient sorting will cause the robots to jam, sending 5 tons of plastic to the ocean.",
+        successReward: "🎉 VICTORY: All 5 trucks sorted perfectly! That's 10,000 plastic bottles saved from the ocean.",
 
         // Challenge Content
         description: "Program the robot to check all 5 recycling trucks (indices 0-4).",
@@ -95,6 +108,9 @@ b = 10  # Second solar array
 
 `,
         expectedOutput: "0\n1\n2\n3\n4",
+        solutionCode: `for (let i = 0; i < 5; i++) {
+    console.log(i);
+}`,
         testStatus: "FAIL",
 
         hints: [
@@ -115,6 +131,8 @@ b = 10  # Second solar array
         environmentalImpact: "Air quality monitors protect 1 billion people from harmful pollution every day!",
         storyContext: "💨 Earth's atmosphere is in danger! You're activating an oxygen monitoring system that tracks air quality. The system needs to announce when it's online by printing 'Oxy-System: ACTIVE'. This helps scientists know the pollution sensors are working!",
         realWorldConnection: "Real environmental scientists use air quality monitoring systems with code like this to detect pollution, warn communities about unhealthy air, and track climate change!",
+        failureConsequence: "⚠️ CRITICAL: If the sensors don't activate, we won't detect the toxic smog wave approaching the city.",
+        successReward: "🎉 VICTORY: System ACTIVE! Early warning network is live, protecting 1 million citizens.",
 
         // Challenge Content
         description: "Activate the oxygen monitoring system by printing the status message.",
@@ -136,6 +154,12 @@ int main() {
     return 0;
 }`,
         expectedOutput: "Oxy-System: ACTIVE",
+        solutionCode: `#include <iostream>
+
+int main() {
+    std::cout << "Oxy-System: ACTIVE" << std::endl;
+    return 0;
+}`,
         testStatus: "FAIL",
 
         hints: [

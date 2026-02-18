@@ -18,7 +18,7 @@ export const SabotageMenu = ({ roomCode, playerId, targetFileId, onSabotageCompl
         if (!canSabotage || isSabotaging) return;
 
         // If it's a code sabotage but we don't have a target file, we can't do it
-        if (type !== 'power_cut' && !targetFileId) {
+        if (!['power_cut', 'seal_doors', 'lock_terminals'].includes(type) && !targetFileId) {
             console.warn(`[SabotageMenu] ${name} requires a target file!`);
             return;
         }
@@ -29,7 +29,7 @@ export const SabotageMenu = ({ roomCode, playerId, targetFileId, onSabotageCompl
         const result = await triggerSabotage(type, playerId, roomCode, targetFileId || '');
 
         if (result.success) {
-            console.log(`[SabotageMenu] ${name} successful:`, result.description);
+            // console.log(`[SabotageMenu] ${name} successful:`, result.description);
             onSabotageComplete?.();
         } else {
             console.warn(`[SabotageMenu] ${name} failed:`, result.description);
@@ -39,14 +39,14 @@ export const SabotageMenu = ({ roomCode, playerId, targetFileId, onSabotageCompl
     };
 
     return (
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end pointer-events-auto">
+        <div className="fixed bottom-6 right-28 z-50 flex flex-col items-end pointer-events-auto">
             {/* Floating Sabotage Button */}
             <button
                 className={`
-                    w-20 h-20 rounded-full border-4 shadow-2xl flex items-center justify-center text-4xl transition-all duration-300
+                    w-16 h-16 rounded-full border-4 shadow-xl flex items-center justify-center text-3xl transition-all duration-300
                     ${!canSabotage || isSabotaging
                         ? 'bg-gray-700 border-gray-600 grayscale cursor-not-allowed scale-90'
-                        : 'bg-red-600 border-red-400 hover:bg-red-500 hover:scale-110 hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] animate-pulse'
+                        : 'bg-red-600 border-red-900 hover:bg-red-500 hover:scale-110 hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] animate-pulse'
                     }
                     ${isOpen ? 'rotate-45' : 'rotate-0'}
                 `}
@@ -64,7 +64,7 @@ export const SabotageMenu = ({ roomCode, playerId, targetFileId, onSabotageCompl
 
             {/* Sabotage Options Menu */}
             {isOpen && canSabotage && (
-                <div className="absolute bottom-24 right-0 w-80 bg-gray-900/95 backdrop-blur-md rounded-xl border-2 border-red-500/50 shadow-2xl p-4 animate-slide-up origin-bottom-right">
+                <div className="absolute bottom-20 right-0 w-80 bg-gray-900/95 backdrop-blur-md rounded-xl border-2 border-red-500/50 shadow-2xl p-4 animate-slide-up origin-bottom-right">
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
                         <span className="text-red-500 font-black text-xl italic tracking-wider flex items-center gap-2">
                             🕵️ SABOTAGE
@@ -102,6 +102,14 @@ export const SabotageMenu = ({ roomCode, playerId, targetFileId, onSabotageCompl
                             desc="Blackout the station"
                             isUltimate
                             onClick={() => handleSabotage('power_cut', 'Power Cut')}
+                        />
+
+                        <SabotageOption
+                            icon="🔒"
+                            title="Lock Terminals"
+                            desc="Prevent coding for 30s"
+                            isUltimate
+                            onClick={() => handleSabotage('lock_terminals', 'Lock Terminals')}
                         />
                     </div>
                 </div>

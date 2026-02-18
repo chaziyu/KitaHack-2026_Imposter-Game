@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../../stores/useGameStore';
+import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const DeployTerminal = () => {
@@ -18,19 +19,30 @@ export const DeployTerminal = () => {
                 import('../../firebaseConfig').then(({ db }) => {
                     get(ref(db, `gamestate/files`)).then((fileSnap) => {
                         const files = fileSnap.val() || {};
-                        const fileList = Object.values(files) as any[];
+                        const fileEntries = Object.entries(files);
+
+                        // Sync Local Progress with Global State
+                        // If a file is PASSED in global state, mark it complete locally
+                        // This fixes the "0/3" bug if someone else completed it
+                        const { completeChallenge } = usePlayerProgress.getState();
 
                         // Count how many files are actually passing (Real or Fake)
-                        const passedFiles = fileList.filter(f => f.testStatus === 'PASS');
+                        const passedFiles = fileEntries.filter(([id, f]: [string, any]) => {
+                            const isPassing = f.testStatus === 'PASS';
+                            if (isPassing) {
+                                completeChallenge(id); // SYNC LOCAL STATE
+                            }
+                            return isPassing;
+                        });
+
                         const passedCount = passedFiles.length;
 
                         // Dynamic Total (based on actual files in DB, or fallback to 3)
-                        // If no files are in DB yet (start of game), use hardcoded fallback
-                        const totalChallenges = fileList.length > 0 ? fileList.length : 3;
+                        const totalChallenges = fileEntries.length > 0 ? fileEntries.length : 3;
 
                         // Check for Corruption (Imposter Sabotage) within the PASSED files
                         // A file is only dangerous if it's "Passing" but Corrupted.
-                        const corruptedFiles = passedFiles.filter(f => f.isCorrupted);
+                        const corruptedFiles = passedFiles.filter(([_, f]: [string, any]) => f.isCorrupted);
 
                         if (passedCount < totalChallenges) {
                             network.sendNotification(`❌ DEPLOYMENT FAILED! ${totalChallenges - passedCount} modules incomplete. -30s Penalty!`, "error");
@@ -56,7 +68,7 @@ export const DeployTerminal = () => {
     return (
         <>
             {/* Trigger Button (Always visible near bottom-right or spawn) */}
-            <div className="fixed bottom-8 right-8 z-40">
+            <div className="fixed bottom-32 right-4 z-40">
                 <button
                     onClick={() => setIsOpen(true)}
                     className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full shadow-lg border-2 border-blue-400 animate-pulse flex items-center gap-2"

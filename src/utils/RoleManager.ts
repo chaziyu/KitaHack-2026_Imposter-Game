@@ -15,11 +15,31 @@ export interface RoleAssignment {
  * @throws Error if fewer than 3 players
  */
 export function assignRoles(playerIds: string[]): RoleAssignment[] {
-    if (playerIds.length < 3) {
-        throw new Error('Imposter Mode requires at least 3 players');
+    if (playerIds.length === 0) return [];
+
+    // 1 Player: Solo Mode (Hero)
+    if (playerIds.length === 1) {
+        return [{ playerId: playerIds[0], role: 'hero' }];
     }
 
-    // Randomly select one imposter
+    // 2 Players: Suspense Mode (50% chance of 1 Imposter)
+    if (playerIds.length === 2) {
+        const hasImposter = Math.random() < 0.5; // 50% chance
+
+        if (!hasImposter) {
+            // Both are Crewmates
+            return playerIds.map(pid => ({ playerId: pid, role: 'hero' }));
+        }
+
+        // 1 Imposter, 1 Crewmate
+        const imposterIndex = Math.floor(Math.random() * 2);
+        return playerIds.map((pid, idx) => ({
+            playerId: pid,
+            role: idx === imposterIndex ? 'imposter' : 'hero'
+        }));
+    }
+
+    // 3+ Players: 1 Imposter, rest Heroes (Standard)
     const imposterIndex = Math.floor(Math.random() * playerIds.length);
 
     return playerIds.map((playerId, index) => ({
@@ -48,7 +68,7 @@ export async function syncRolesToFirebase(
     }
 
     await update(ref(db), updates);
-    console.log('[RoleManager] Roles synced to Firebase:', roleAssignments);
+    // console.log('[RoleManager] Roles synced to Firebase:', roleAssignments);
 }
 
 /**

@@ -25,7 +25,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                 // @ts-expect-error -- submitFeedback exists at runtime but is not yet in the TS interface
                 await (network as { submitFeedback: (rating: number, comment: string) => Promise<void> }).submitFeedback(rating, comment);
             } else {
-                console.log('Feedback submitted (simulated):', { rating, comment });
+                // console.log('Feedback submitted (simulated):', { rating, comment });
                 // Fallback for dev/no-network
                 await new Promise(resolve => setTimeout(resolve, 500));
             }

@@ -40,14 +40,14 @@ export async function signInWithName(displayName: string): Promise<User> {
                 lastLoginAt: Date.now()
             };
             await set(userProfileRef, profile);
-            console.log('Created new user profile:', displayName);
+            // console.log('Created new user profile:', displayName);
         } else {
             // Existing user - update last login
             await update(userProfileRef, {
                 lastLoginAt: Date.now(),
                 displayName // Update name if changed
             });
-            console.log('Updated existing user profile:', displayName);
+            // console.log('Updated existing user profile:', displayName);
         }
 
         return user;
@@ -77,7 +77,7 @@ export function subscribeToAuthState(callback: (user: User | null) => void): () 
 export async function signOut(): Promise<void> {
     try {
         await auth.signOut();
-        console.log('User signed out');
+        // console.log('User signed out');
     } catch (error) {
         console.error('Sign out failed:', error);
         throw error;

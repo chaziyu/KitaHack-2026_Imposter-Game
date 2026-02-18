@@ -25,7 +25,7 @@ export const CodeReviewModal = ({ isOpen, onClose, rating, feedback, tip, isLoad
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-purple-500/50 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-scale-up">
+            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-purple-500/50 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-scale-up max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-t-2xl border-b-2 border-purple-400/30">
                     <div className="flex items-center justify-between">
@@ -48,7 +48,7 @@ export const CodeReviewModal = ({ isOpen, onClose, rating, feedback, tip, isLoad
                 </div>
 
                 {/* Content */}
-                <div className="p-8">
+                <div className="p-8 overflow-y-auto custom-scrollbar">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4">
                             <div className="relative">

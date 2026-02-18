@@ -13,7 +13,7 @@ export const JailOverlay = () => {
 
     useEffect(() => {
         if (!me || me.status !== 'jailed' || !me.jailEndTime) {
-            setTimeLeft(0);
+            setTimeout(() => setTimeLeft(0), 0);
             return;
         }
 

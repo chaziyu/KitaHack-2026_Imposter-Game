@@ -33,11 +33,19 @@ export const VictoryScreen = ({ status, players, teamChallengesCompleted, onRetu
             <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className={`max-w-4xl w-full mx-4 rounded-3xl p-8 shadow-2xl border-4 ${isHeroesWin
-                    ? 'bg-gradient-to-br from-blue-900 to-green-900 border-green-500'
-                    : 'bg-gradient-to-br from-red-900 to-gray-900 border-red-500'
+                transition={{ type: "spring", bounce: 0.5 }}
+                className={`max-w-5xl w-full mx-4 rounded-3xl p-8 shadow-2xl border-4 backdrop-blur-xl ${isHeroesWin
+                    ? 'bg-gradient-to-br from-blue-900/90 to-green-900/90 border-green-400'
+                    : 'bg-gradient-to-br from-red-900/90 to-gray-900/90 border-red-500'
                     }`}
             >
+                {/* Particle / ambient effects container */}
+                <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid-pattern.png')] opacity-10"></div>
+                    {isHeroesWin && <div className="absolute inset-0 bg-green-500/10 animate-pulse"></div>}
+                    {!isHeroesWin && <div className="absolute inset-0 bg-red-500/10 animate-pulse"></div>}
+                </div>
+
                 {/* Header */}
                 <div className="text-center mb-8">
                     <motion.h1
@@ -112,7 +120,7 @@ export const VictoryScreen = ({ status, players, teamChallengesCompleted, onRetu
                             onClick={onReturnToLobby}
                             className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold text-lg rounded-xl transition-colors"
                         >
-                            🔄 Return to Lobby
+                            🔄 Play Again
                         </motion.button>
                     )}
 
@@ -123,7 +131,7 @@ export const VictoryScreen = ({ status, players, teamChallengesCompleted, onRetu
                             onClick={onContinuePlaying}
                             className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl transition-colors"
                         >
-                            ▶️ Continue Playing
+                            ▶️ Stay Here
                         </motion.button>
                     )}
 
@@ -134,7 +142,7 @@ export const VictoryScreen = ({ status, players, teamChallengesCompleted, onRetu
                             onClick={onLeaveGame}
                             className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg rounded-xl transition-colors"
                         >
-                            👋 Leave Game
+                            👋 Exit Game
                         </motion.button>
                     )}
                 </div>

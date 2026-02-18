@@ -17,12 +17,21 @@ import { VictoryScreen } from "./features/ui/screens/VictoryScreen";
 import { CyberBackground } from "./features/ui/components/CyberBackground";
 import { BootLoader } from "./features/ui/BootLoader";
 import { AnimatePresence, motion } from "framer-motion";
-import { SabotageMenu } from "./features/ui/SabotageMenu";
+// import { SabotageMenu } from "./features/ui/SabotageMenu"; <-- Lazy Loaded
 import { usePlayerRole } from "./hooks/usePlayerRole";
 import toast, { Toaster } from "react-hot-toast";
 import { GameTimer } from "./features/ui/components/GameTimer";
 import { DeployTerminal } from "./features/ui/DeployTerminal";
 import { JailOverlay } from "./features/ui/JailOverlay";
+import { GlobalMentor } from "./features/ui/GlobalMentor";
+
+// Lazy Load Heavy Components
+import { lazy, Suspense } from 'react';
+const CodeEditor = lazy(() => import("./features/ui/CodeEditor").then(module => ({ default: module.CodeEditor })));
+const CentralTerminal = lazy(() => import("./features/ui/CentralTerminal").then(module => ({ default: module.CentralTerminal })));
+const AcademyUI = lazy(() => import("./features/ui/AcademyUI").then(module => ({ default: module.AcademyUI })));
+const SabotageMenu = lazy(() => import("./features/ui/SabotageMenu").then(module => ({ default: module.SabotageMenu })));
+
 
 import { ChallengeMonitor } from "./features/game/ChallengeMonitor";
 import { usePlayerProgress } from "./stores/usePlayerProgress";
@@ -34,14 +43,13 @@ import { DEMO_MODE } from "./config/demoMode";
 
 function App() {
   const { isTerminalOpen, terminalType, gameState, network, roomCode, isHost, playerId, activeFileId } = useGameStore();
-  const { shouldShowIntro, shouldShowTutorial, shouldShowVictory, completedChallenges, hasSeenVictory } = usePlayerProgress();
+  const { shouldShowIntro, shouldShowTutorial } = usePlayerProgress();
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
   const [showVictory, setShowVictory] = useState(false);
   const playerRole = usePlayerRole(roomCode, playerId);
 
   // Multiplayer victory state
   const [multiplayerVictoryStatus, setMultiplayerVictoryStatus] = useState<'VICTORY_CREW' | 'VICTORY_IMPOSTER' | null>(null);
-  const [teamChallengesCompleted] = useState(0);
   const [players, setPlayers] = useState<PlayerState[]>([]);
 
 
@@ -51,6 +59,32 @@ function App() {
       initialize();
     }
   }, [initialize]);
+
+  // BACKGROUND PREFETCH: Load heavy UI components silently after game start
+  useEffect(() => {
+    const prefetch = async () => {
+      try {
+        // Wait 3 seconds for intro/loading to settle so we don't slow down startup
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Trigger the imports so they are in the browser cache
+        const imports = [
+          import("./features/ui/CodeEditor"),
+          import("./features/ui/CentralTerminal"),
+          import("./features/ui/AcademyUI"),
+          import("./features/ui/SabotageMenu")
+        ];
+        await Promise.all(imports);
+        // console.log("[App] Background prefetch complete - Terminals will open instantly now");
+      } catch (e) {
+        console.warn("[App] Prefetch failed", e);
+      }
+    };
+
+    // Only run in production/authenticated mode to save dev bandwidth, 
+    // or just run always. Let's run always so user experience is consistent.
+    prefetch();
+  }, []);
 
   // Subscribe to multiplayer game status (for victory detection)
   useEffect(() => {
@@ -62,16 +96,19 @@ function App() {
 
       if (status === 'VICTORY_CREW' || status === 'VICTORY_IMPOSTER') {
         setMultiplayerVictoryStatus(status);
+      } else if (status === 'LOBBY') {
+        setMultiplayerVictoryStatus(null);
+        useGameStore.getState().setGameState('LOBBY');
       }
     });
 
     // Subscribe to players to show in victory screen
-    network.subscribeToPlayers((playerList) => {
+    network.subscribeToPlayers((playerList: PlayerState[]) => {
       setPlayers(playerList);
     });
 
     // Subscribe to Global Notifications
-    network.subscribeToNotifications((message, type) => {
+    network.subscribeToNotifications((message: string, type: 'success' | 'error' | 'info') => {
       switch (type) {
         case 'success':
           toast.success(message);
@@ -209,17 +246,19 @@ function App() {
             <MeetingUI />
             <RedemptionScreen />
 
-            {/* The 4 UI Types */}
-            {isTerminalOpen && terminalType === 'editor' && <CodeEditor />}
-            {isTerminalOpen && terminalType === 'hub' && <CentralTerminal />}
-            {isTerminalOpen && terminalType === 'academy' && <AcademyUI />}
+            {/* The 4 UI Types - Wrapped in Suspense */}
+            <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center text-white bg-black/50 z-50">Loading Interface...</div>}>
+              {isTerminalOpen && terminalType === 'editor' && <CodeEditor />}
+              {isTerminalOpen && terminalType === 'hub' && <CentralTerminal />}
+              {isTerminalOpen && terminalType === 'academy' && <AcademyUI />}
+            </Suspense>
 
             {/* Multiplayer Victory Screen */}
             {multiplayerVictoryStatus && (
               <VictoryScreen
                 status={multiplayerVictoryStatus}
                 players={players}
-                teamChallengesCompleted={teamChallengesCompleted}
+                teamChallengesCompleted={0} // Fixed to 0 as tracking was removed from App.tsx
                 onReturnToLobby={isHost ? () => {
                   // Host can reset game to lobby
                   if (network && roomCode) {
@@ -254,12 +293,17 @@ function App() {
 
       {/* Global Sabotage Menu for Imposters */}
       {gameState === 'GAME' && playerRole === 'imposter' && roomCode && playerId && (
-        <SabotageMenu
-          roomCode={roomCode}
-          playerId={playerId}
-          targetFileId={activeFileId || undefined}
-        />
+        <Suspense fallback={null}>
+          <SabotageMenu
+            roomCode={roomCode}
+            playerId={playerId}
+            targetFileId={activeFileId || undefined}
+          />
+        </Suspense>
       )}
+
+      {/* Global AI Mentor (Professor Gaia) */}
+      <GlobalMentor />
     </div>
   );
 }

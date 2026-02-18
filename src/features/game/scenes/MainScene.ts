@@ -4,14 +4,19 @@ import { useGameStore } from '../../../stores/useGameStore';
 import type { NetworkService, PlayerState } from '../../networking/NetworkInterface';
 import { MapBuilder } from '../MapBuilder';
 import { useMeetingStore } from '../../../stores/useMeetingStore';
-// import { usePlayerStore } from '../../../stores/usePlayerStore'; // Dynamic import used instead
-// Wait, I used dynamic import in update loop. But verify if I need top level import.
+import { usePlayerStore } from '../../../stores/usePlayerStore';
+import { ref, onValue, set } from 'firebase/database';
+
+import { db } from '../../../firebaseConfig';
+
+
 
 export class MainScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private otherPlayers: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private network!: NetworkService;
+  private unsubscribers: (() => void)[] = [];
   private myPlayerId: string | null = null;
   private currentZone: string | null = null;
   private wallLayer!: Phaser.Tilemaps.TilemapLayer;
@@ -26,7 +31,7 @@ export class MainScene extends Phaser.Scene {
     D: Phaser.Input.Keyboard.Key;
     M: Phaser.Input.Keyboard.Key; // Debug: Meeting
   };
-
+  
   private logicZone!: Phaser.GameObjects.Rectangle;
   private hubZone!: Phaser.GameObjects.Rectangle;
   private bgm!: Phaser.Sound.BaseSound | Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound;
@@ -50,34 +55,18 @@ export class MainScene extends Phaser.Scene {
   private powerFixTimer: number = 0;
   private powerFailureTime: number = 0;
   private powerFailureText!: Phaser.GameObjects.Text;
+  private mapBuilder!: MapBuilder;
+  
+  // Sabotage States
+  private isDoorsSealed: boolean = false;
+  private isTerminalsLocked: boolean = false;
+  private terminalLockText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('MainScene');
   }
 
-  preload() {
-    // Load as spritesheets! (assuming 24x24 frames)
-    this.load.spritesheet('doux', 'assets/sprites/DinoSprites - doux.png', { frameWidth: 24, frameHeight: 24 });
-    this.load.spritesheet('mort', 'assets/sprites/DinoSprites - mort.png', { frameWidth: 24, frameHeight: 24 });
-    this.load.spritesheet('tard', 'assets/sprites/DinoSprites - tard.png', { frameWidth: 24, frameHeight: 24 });
-    this.load.spritesheet('vita', 'assets/sprites/DinoSprites - vita.png', { frameWidth: 24, frameHeight: 24 });
-    this.load.image('tiles', 'assets/tilesets/scifi.png');
-    this.load.image('terminal', 'assets/objects/small terminal.png');
-    this.load.image('table', 'assets/objects/large_round_table.png');
-    this.load.image('background', 'assets/background/bg.png'); // Preload background
 
-    // Audio
-    this.load.audio('bgm', 'assets/sounds/music/background.ogg');
-    this.load.audio('meeting_bgm', 'assets/sounds/music/meeting_background_music.wav');
-    this.load.audio('footsteps', 'assets/sounds/sfx/walking.mp3');
-
-    this.load.on('filecomplete', (key: string) => {
-      console.log(`Loaded: ${key}`);
-    });
-    this.load.on('loaderror', (file: any) => {
-      console.warn(`Error loading: ${file.key} from ${file.url}`);
-    });
-  }
 
   create() {
     // 0. Set Texture Filter to Nearest (for Pixel Art)
@@ -106,7 +95,7 @@ export class MainScene extends Phaser.Scene {
       // Production: Use existing connection passed from Menu/Lobby
       this.network = network;
       this.myPlayerId = playerId;
-      console.log(`[MainScene] Reusing Network: Room ${roomCode}, Player ${playerId}`);
+      // console.log(`[MainScene] Reusing Network: Room ${roomCode}, Player ${playerId}`);
     } else if (roomCode && playerId && playerName) {
       // Re-connect using existing credentials (e.g. after refresh if state persisted, or race condition)
       console.warn('[MainScene] Network object missing but credentials exist. Reconnecting...');
@@ -114,7 +103,7 @@ export class MainScene extends Phaser.Scene {
       useGameStore.getState().setNetwork(this.network);
       this.network.connect(roomCode, playerName).then(() => {
         this.myPlayerId = playerId;
-        console.log(`[MainScene] Reconnected to ${roomCode}`);
+        // console.log(`[MainScene] Reconnected to ${roomCode}`);
       });
     } else {
       // Fallback / Dev Mode
@@ -137,9 +126,20 @@ export class MainScene extends Phaser.Scene {
       this.bgm.play();
     }
 
-    if (this.cache.audio.exists('meeting_bgm')) {
+    // Lazy load meeting BGM if not present
+    if (!this.cache.audio.exists('meeting_bgm')) {
+      console.log('[MainScene] Lazy loading meeting BGM...');
+      this.load.audio('meeting_bgm', 'assets/sounds/music/meeting_background_music.wav');
+      this.load.start();
+    } else {
       this.meetingBgm = this.sound.add('meeting_bgm', { loop: true, volume: useGameStore.getState().bgmVolume });
     }
+
+    // Listen for lazy load completion
+    this.load.on('filecomplete-audio-meeting_bgm', () => {
+      console.log('[MainScene] Meeting BGM loaded!');
+      this.meetingBgm = this.sound.add('meeting_bgm', { loop: true, volume: useGameStore.getState().bgmVolume });
+    });
 
     if (this.cache.audio.exists('footsteps')) {
       this.footsteps = this.sound.add('footsteps', { loop: true, volume: useGameStore.getState().sfxVolume });
@@ -156,7 +156,7 @@ export class MainScene extends Phaser.Scene {
 
     // Subscribe to Meeting State
     let prevStatus = 'IDLE';
-    this.network.subscribeToMeeting((state) => {
+    const unsubMeeting = this.network.subscribeToMeeting((state) => {
       // Update Store
       useMeetingStore.getState().setMeetingState(state);
 
@@ -168,27 +168,73 @@ export class MainScene extends Phaser.Scene {
       }
       prevStatus = state.status;
     });
+    this.unsubscribers.push(unsubMeeting);
 
     // Subscribe to Chat
-    this.network.subscribeToChat((messages) => {
+    const unsubChat = this.network.subscribeToChat((messages) => {
       useMeetingStore.getState().setMeetingState({ chatMessages: messages });
     });
+    this.unsubscribers.push(unsubChat);
 
     // Subscribe to Power State
     if (roomCode) {
-      import('firebase/database').then(({ ref, onValue }) => {
-        import('../../../firebaseConfig').then(({ db }) => {
-          const powerRef = ref(db, `rooms/${roomCode}/gamestate/power`);
-          onValue(powerRef, (snapshot) => {
-            const powerData = snapshot.val();
-            const powerOut = powerData?.status === 'OFF';
-            const failureTime = powerData?.failureTime || 0;
-            if (powerOut !== this.isPowerOut || (powerOut && failureTime !== this.powerFailureTime)) {
-              this.togglePower(powerOut, failureTime);
-            }
-          });
-        });
+      // Power
+      const powerRef = ref(db, `rooms/${roomCode}/gamestate/power`);
+      const unsubPower = onValue(powerRef, (snapshot) => {
+        const powerData = snapshot.val();
+        const powerOut = powerData?.status === 'OFF';
+        const failureTime = powerData?.failureTime || 0;
+        if (powerOut !== this.isPowerOut || (powerOut && failureTime !== this.powerFailureTime)) {
+          this.togglePower(powerOut, failureTime);
+        }
       });
+      this.unsubscribers.push(unsubPower);
+
+      // Doors
+      const doorsRef = ref(db, `rooms/${roomCode}/gamestate/doors`);
+      const unsubDoors = onValue(doorsRef, (snapshot) => {
+        const data = snapshot.val();
+        const isSealed = data?.status === 'SEALED' && data.endTime > Date.now();
+        if (isSealed !== this.isDoorsSealed) {
+          this.isDoorsSealed = isSealed;
+          this.toggleDoor(!isSealed); // Sealed = Closed (!Open)
+          if (isSealed) {
+            this.cameras.main.shake(200, 0.005);
+            // Auto-clear after time
+            setTimeout(() => {
+              if (Date.now() > data.endTime) {
+                this.isDoorsSealed = false;
+                this.toggleDoor(true);
+              }
+            }, data.endTime - Date.now());
+          }
+        }
+      });
+      this.unsubscribers.push(unsubDoors);
+
+      // Terminals
+      const terminalsRef = ref(db, `rooms/${roomCode}/gamestate/terminals`);
+      const unsubTerminals = onValue(terminalsRef, (snapshot) => {
+        const data = snapshot.val();
+        const isLocked = data?.status === 'LOCKED' && data.endTime > Date.now();
+        this.isTerminalsLocked = isLocked;
+        if (this.terminalLockText) this.terminalLockText.setVisible(isLocked);
+
+        if (isLocked) {
+          // Force close if open
+          const { isTerminalOpen, closeTerminal } = useGameStore.getState();
+          if (isTerminalOpen) closeTerminal();
+
+          // Auto-clear
+          setTimeout(() => {
+            if (Date.now() > data.endTime) {
+              this.isTerminalsLocked = false;
+              if (this.terminalLockText) this.terminalLockText.setVisible(false);
+            }
+          }, data.endTime - Date.now());
+        }
+      });
+      this.unsubscribers.push(unsubTerminals);
     }
 
     // Enable Lights
@@ -208,6 +254,15 @@ export class MainScene extends Phaser.Scene {
       color: '#ff0000',
       stroke: '#000000',
       strokeThickness: 6,
+      resolution: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1000).setVisible(false);
+
+    this.terminalLockText = this.add.text(400, 150, "⚠️ TERMINALS LOCKED BY SABOTAGE ⚠️", {
+      fontSize: '24px',
+      fontFamily: 'Courier',
+      color: '#ffff00',
+      backgroundColor: '#000000',
+      padding: { x: 10, y: 5 },
       resolution: 2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1000).setVisible(false);
 
@@ -232,8 +287,8 @@ export class MainScene extends Phaser.Scene {
 
     // 2. Build Map
     // 2. Build Map
-    const mapBuilder = new MapBuilder(this);
-    const buildResult = mapBuilder.build();
+    this.mapBuilder = new MapBuilder(this);     
+    const buildResult = this.mapBuilder.build();
     const { walls, dbZone, apiZone, hubZone, meetingZone, solarAcademyZone, wasteAcademyZone, oxygenAcademyZone, doorTiles, spawnPoint } = buildResult;
 
     // We know 'walls' is a TilemapLayer in this context, but TS infers union with StaticGroup
@@ -360,16 +415,18 @@ export class MainScene extends Phaser.Scene {
     }
 
     // 6. Handle Other Players
-    this.network.subscribeToPlayers((players: PlayerState[]) => {
+    const unsubPlayers = this.network.subscribeToPlayers((players: PlayerState[]) => {
       this.updateOtherPlayers(players);
       // Sync to Global Store (CRITICAL for UI)
-      import('../../../stores/usePlayerStore').then(({ usePlayerStore }) => {
-        usePlayerStore.getState().setPlayers(players);
-      });
+      usePlayerStore.getState().setPlayers(players);
     });
+    this.unsubscribers.push(unsubPlayers);
 
     // 7. Cleanup
     this.events.on('destroy', () => {
+      this.unsubscribers.forEach(unsub => unsub());
+      this.unsubscribers = [];
+
       if (this.network) this.network.disconnect();
       if (this.bgm) this.bgm.stop();
       if (this.meetingBgm) this.meetingBgm.stop();
@@ -377,17 +434,30 @@ export class MainScene extends Phaser.Scene {
     });
 
     // Add Atmospheric Lights
-    // Removed as per request (replaced by uniform ceiling lights)
+
   }
 
   update(_time: number, delta: number) {
     if (!this.cursors || !this.player) return;
 
+    // PERFORMANCE OPTIMIZATION: Single Store Access
+    const state = useGameStore.getState();
+    const {
+      activeFileId,
+      openEditor,
+      openAcademy,
+      closeTerminal,
+      playerSkin,
+      roomCode,
+      gameState,
+      isHost,
+      terminalType
+    } = state;
+
     const speed = 160;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
 
     // Prevent movement if Editor is open or typing
-    const { activeFileId } = useGameStore.getState();
     if (activeFileId || (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'))) {
       body.setVelocity(0);
       this.player.play('doux-idle', true);
@@ -396,18 +466,21 @@ export class MainScene extends Phaser.Scene {
     }
 
     // JAIL CHECK
-    import('../../../stores/usePlayerStore').then(({ usePlayerStore }) => {
-      const me = usePlayerStore.getState().players.find(p => p.id === this.myPlayerId);
-      if (me && me.status === 'jailed') {
-        body.setVelocity(0);
-        this.player.play('doux-idle', true);
-        return;
+    const me = usePlayerStore.getState().players.find(p => p.id === this.myPlayerId);
+    if (me && me.status === 'jailed') {
+      // Enforce Jail Position (Bottom Right Corner: 1400, 1400)
+      const jailX = 1400;
+      const jailY = 1400;
+
+      // Initial Teleport
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, jailX, jailY) > 100) {
+        this.player.setPosition(jailX, jailY);
       }
-    });
-    // Sync check (above is async so it might lag one frame, but in update loop we can just check directly if we import it top level)
-    // Actually dynamic import in update loop is BAD. usePlayerStore is already imported at top?
-    // No, it was imported in `create` via dynamic import.
-    // Let's rely on `this.network` or `useGameStore` if possible, or just import `usePlayerStore` at top.
+
+      body.setVelocity(0);
+      this.player.play('doux-idle', true);
+      return;
+    }
 
     // Name Tag update moved to postupdate to fix jitter
 
@@ -440,7 +513,6 @@ export class MainScene extends Phaser.Scene {
     }
 
     // Animation Logic
-    const { playerSkin } = useGameStore.getState();
     const mySkin = playerSkin || 'doux';
 
     if (isMoving) {
@@ -467,7 +539,6 @@ export class MainScene extends Phaser.Scene {
     }
 
     // Zone Interaction
-    const { openEditor, openAcademy, closeTerminal } = useGameStore.getState();
     const inDbZone = this.physics.overlap(this.player, this.dbZone);
     const inLogicZone = this.physics.overlap(this.player, this.logicZone);
     const inHubZone = this.physics.overlap(this.player, this.hubZone);
@@ -500,15 +571,20 @@ export class MainScene extends Phaser.Scene {
       this.zoneProgressBar.fillRect(this.player.x - 20, this.player.y + 20, 40 * progress, 6);
 
       if (this.zoneTimer >= 700) {
-        this.currentZone = activeZoneId;
-        openEditor(activeZoneId);
-        this.zoneProgressBar.clear();
-        this.zoneTimer = 0;
-        this.pendingZoneId = null;
+        if (this.isTerminalsLocked) {
+          this.cameras.main.shake(100, 0.005);
+          this.zoneTimer = 0;
+        } else {
+          this.currentZone = activeZoneId;
+          openEditor(activeZoneId);
+          this.zoneProgressBar.clear();
+          this.zoneTimer = 0;
+          this.pendingZoneId = null;
+        }
       }
     }
     // 2. If we are in an academy zone
-    else if (acadType && useGameStore.getState().terminalType !== 'academy') {
+    else if (acadType && terminalType !== 'academy') {
       if (this.pendingZoneId !== acadType) {
         this.pendingZoneId = acadType;
         this.zoneTimer = 0;
@@ -522,17 +598,23 @@ export class MainScene extends Phaser.Scene {
       this.zoneProgressBar.fillRect(this.player.x - 20, this.player.y + 20, 40 * progress, 6);
 
       if (this.zoneTimer >= 700) {
-        openAcademy(acadType);
-        this.zoneProgressBar.clear();
-        this.zoneTimer = 0;
-        this.pendingZoneId = null;
+        if (this.isTerminalsLocked) {
+          // Shake or deny
+          this.cameras.main.shake(100, 0.005);
+          this.zoneTimer = 0;
+        } else {
+          openAcademy(acadType);
+          this.zoneProgressBar.clear();
+          this.zoneTimer = 0;
+          this.pendingZoneId = null;
+        }
       }
     }
     // 3. Reset logic
     else {
       // If we walked out of a zone that was open, close it (optional, maybe keep it open?)
       // Current design: Close if we walk out of ANY zone
-      if (!activeZoneId && !acadType && (this.currentZone || useGameStore.getState().terminalType)) {
+      if (!activeZoneId && !acadType && (this.currentZone || terminalType)) {
         closeTerminal();
         this.currentZone = null;
       }
@@ -540,7 +622,7 @@ export class MainScene extends Phaser.Scene {
       // Reset progress if we are not in ANY zone or if we are in the zone that is ALREADY active (currentZone)
       // For Academy, it stays as terminalType === 'academy'.
       const isAlreadyActive = (activeZoneId && activeZoneId === this.currentZone) ||
-        (acadType && useGameStore.getState().terminalType === 'academy');
+        (acadType && terminalType === 'academy');
 
       if (!activeZoneId && !acadType || isAlreadyActive) {
         this.zoneTimer = 0;
@@ -553,10 +635,38 @@ export class MainScene extends Phaser.Scene {
     // Distance check
     const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.meetingButton.x, this.meetingButton.y);
     if (dist < 50) {
-      this.meetingText.setVisible(true);
-      if (this.wasd.M && Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
-        if (this.myPlayerId) {
-          this.network.startMeeting(this.myPlayerId);
+      // 1. Get cooldown from store
+      const { cooldownEnd } = useMeetingStore.getState();
+      
+      // --- DEBUG LOG START ---
+      // Open Console (F12) to see this
+      if (Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
+         console.log("DEBUG CHECK:");
+         console.log("Cooldown End Time:", cooldownEnd);
+         console.log("Current Time:", Date.now());
+         console.log("Difference:", cooldownEnd ? cooldownEnd - Date.now() : "No Cooldown");
+      }
+      // --- DEBUG LOG END ---
+      const now = Date.now();
+      const remaining = cooldownEnd ? Math.ceil((cooldownEnd - now) / 1000) : 0;
+
+      // 2. Logic: Is it on cooldown?
+      if (remaining > 0) {
+        // ON COOLDOWN
+        this.meetingText.setText(`Cooldown: ${remaining}s`);
+        this.meetingText.setColor('#ff0000'); // Red text
+        this.meetingText.setVisible(true);
+      } else {
+        // READY
+        this.meetingText.setText("Press 'M' for Meeting");
+        this.meetingText.setColor('#ffffff'); // White text
+        this.meetingText.setVisible(true);
+
+        // Only allow press if NO cooldown
+        if (this.wasd.M && Phaser.Input.Keyboard.JustDown(this.wasd.M)) {
+          if (this.myPlayerId) {
+            this.network.startMeeting(this.myPlayerId);
+          }
         }
       }
     } else {
@@ -576,15 +686,10 @@ export class MainScene extends Phaser.Scene {
 
       if (this.powerFixTimer >= 5000) {
         // Restore Power
-        const { roomCode } = useGameStore.getState();
         if (roomCode) {
-          import('firebase/database').then(({ ref, set }) => {
-            import('../../../firebaseConfig').then(({ db }) => {
-              set(ref(db, `rooms/${roomCode}/gamestate/power`), {
-                status: 'ON',
-                timestamp: Date.now()
-              });
-            });
+          set(ref(db, `rooms/${roomCode}/gamestate/power`), {
+            status: 'ON',
+            timestamp: Date.now()
           });
         }
         this.powerFixTimer = 0;
@@ -607,15 +712,10 @@ export class MainScene extends Phaser.Scene {
         this.powerFailureText.clearTint();
       }
 
-      // Check for failure (Any player can detect it, but we only set it if it's not already a victory)
+      // Check for failure (Only HOST triggers victory to prevent race conditions)
       if (remaining === 0) {
-        const { roomCode, gameState } = useGameStore.getState();
-        if (roomCode && gameState === 'GAME') {
-          import('firebase/database').then(({ ref, set }) => {
-            import('../../../firebaseConfig').then(({ db }) => {
-              set(ref(db, `rooms/${roomCode}/status`), 'VICTORY_IMPOSTER');
-            });
-          });
+        if (isHost && roomCode && gameState === 'GAME') {
+          set(ref(db, `rooms/${roomCode}/status`), 'VICTORY_IMPOSTER');
         }
       }
     }
@@ -678,8 +778,13 @@ export class MainScene extends Phaser.Scene {
     this.isPowerOut = isOut;
     this.powerFailureTime = failureTime;
 
+
+    if (this.mapBuilder) {
+        this.mapBuilder.setBlackout(isOut);
+    }
+
     if (isOut) {
-      this.lights.setAmbientColor(0x050505); // Near black
+      this.lights.setAmbientColor(0x000000);
       if (!this.playerLight) {
         this.playerLight = this.lights.addLight(0, 0, 120, 0xffffff, 1.5);
       } else {
@@ -721,6 +826,15 @@ export class MainScene extends Phaser.Scene {
           const nameTag = other.getData('nameTag');
           if (nameTag) {
             nameTag.setPosition(p.x, p.y - 30);
+          }
+
+          // JAIL TELEPORT HANDLED BY SERVER POS (p.x/p.y), 
+          // BUT IF LOCAL CLIENT SEES STATUS 'JAILED', FORCE RENDER IN JAIL?
+          // No, trusting p.x/p.y is better, assuming the jailed client enforces it (which it does above).
+          // However, to be safe, if we see them jailed, we can optionally snap them.
+          if (p.status === 'jailed') {
+            other.setPosition(1400, 1400); // Visual snap
+            if (nameTag) nameTag.setPosition(1400, 1400 - 30);
           }
 
           // Simple animation for remote players

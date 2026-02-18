@@ -16,7 +16,7 @@ export async function castVote(
     roomCode: string
 ): Promise<void> {
     await update(ref(db, `rooms/${roomCode}/meeting/votes`), { [voterId]: candidateId });
-    console.log(`[Voting] ${voterId} voted for ${candidateId}`);
+    // console.log(`[Voting] ${voterId} voted for ${candidateId}`);
 }
 
 /**
@@ -53,7 +53,7 @@ export async function ejectPlayer(
         status: 'ejected',
         isAlive: false
     });
-    console.log(`[Voting] Player ${playerId} ejected`);
+    // console.log(`[Voting] Player ${playerId} ejected`);
 }
 
 /**
@@ -72,7 +72,7 @@ export async function reformPlayer(
             role: 'reformed',
             status: 'reformed'
         });
-        console.log(`[Voting] Imposter ${playerId} reformed`);
+        // console.log(`[Voting] Imposter ${playerId} reformed`);
     }
 }
 

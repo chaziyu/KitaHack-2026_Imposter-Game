@@ -119,7 +119,7 @@ export const MainMenu = () => {
         if (!savedSession) return;
 
         const { id, room, name, isHost, skin, tint } = savedSession;
-        console.log(`[Rejoin] Attempting to rejoin ${room} as ${name} (${id})`);
+        // console.log(`[Rejoin] Attempting to rejoin ${room} as ${name} (${id})`);
 
         // 1. Check if room exists
         const roomRef = ref(db, `rooms/${room}`);
@@ -163,7 +163,7 @@ export const MainMenu = () => {
         if (roomData.status === 'PLAYING') {
             setGameState('GAME');
         } else {
-            console.log('joining lobby')
+            // console.log('joining lobby')
             setGameState('LOBBY');
         }
     };

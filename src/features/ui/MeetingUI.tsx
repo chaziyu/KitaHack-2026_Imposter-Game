@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../networking/NetworkInterface';
+
+interface MeetingOutcome {
+    ejectedId: string | null;
+    wasImposter: boolean;
+    reason: 'VOTE_SKIP' | 'VOTE_TIE' | 'VOTE_EJECT';
+}
 import { useMeetingStore } from '../../stores/useMeetingStore';
 import { useGameStore } from '../../stores/useGameStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
@@ -8,6 +14,7 @@ import Editor from '@monaco-editor/react';
 import { LEVEL_1_PROBLEMS } from '../../shared/ProblemData';
 import { ref, update } from 'firebase/database';
 import { db } from '../../firebaseConfig';
+import { APP_CONSTANTS } from '../../utils/AppConstants';
 
 declare global {
     interface Window {
@@ -17,8 +24,9 @@ declare global {
     }
 }
 
+
 export const MeetingUI = () => {
-    const { status, meetingEndTime, presenterId, highlightedLine, chatMessages, votes, result } = useMeetingStore();
+    const { status, meetingEndTime, presenterId, highlightedLine, chatMessages, votes, result, outcome } = useMeetingStore();
     const { network, playerId, isHost, roomCode } = useGameStore();
     const { players } = usePlayerStore();
 
@@ -129,12 +137,9 @@ export const MeetingUI = () => {
         const globalUpdates: Record<string, unknown> = {};
         if (ejectedPlayer && outcomeState.ejectedId) {
             // JAIL LOGIC (Instead of Eject/Kill)
-            const jailTime = 60000; // 60 seconds
+            const jailTime = APP_CONSTANTS.GAME.JAIL_TIME;
             globalUpdates[`rooms/${roomCode}/players/${ejectedPlayer.id}/status`] = 'jailed';
             globalUpdates[`rooms/${roomCode}/players/${ejectedPlayer.id}/jailEndTime`] = Date.now() + jailTime;
-
-            // Note: We do NOT set isAlive to false. They are alive, just jailed.
-            // We also do NOT trigger Victory here anymore. Deployment is the only way (or timer).
         }
 
         update(ref(db), globalUpdates);
@@ -247,7 +252,7 @@ export const MeetingUI = () => {
         return (
             <button
                 onClick={handleStartMeeting} // NOW REAL TRIGGER
-                className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-full shadow-lg z-50 hover:bg-red-500 transition-all animate-bounce border-2 border-red-400"
+                className="fixed bottom-6 right-6 w-16 h-16 bg-red-600 text-white rounded-full shadow-xl z-50 hover:bg-red-500 transition-all hover:scale-110 border-4 border-red-800 flex items-center justify-center text-3xl"
                 title="EMERGENCY MEETING"
             >
                 🚨

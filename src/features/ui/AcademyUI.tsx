@@ -90,13 +90,31 @@ const LESSONS: Record<string, AcademyLesson> = {
         tutor: "Scientist Vita",
         sdgGoals: [13, 3],
         intro: "Greetings, Planet Protector! 🛡️",
-        storyIntro: "Earth's air is getting polluted! But we have hope - air quality sensors that detect harmful gases. Your mission? Learn to program the sensor!",
-        realWorldImpact: "Amazing Truth: Right now, thousands of air quality sensors around the world are protecting over 1 BILLION people by detecting pollution!",
+        storyIntro: "Earth's air is getting polluted! But we have hope - new Bio-Domes that need automated planting systems. Your mission is to program the reforestation drones using FUNCTIONS!",
+        realWorldImpact: "Amazing Truth: Reforestation algorithms help drones plant 100,000 trees a day! This restores habitats and cleans the air for everyone.",
         steps: [
             {
                 type: 'text',
-                title: "Coming Soon",
-                content: "Learn how to plant trees with Functions! This lesson is under construction."
+                title: "Step 1: What is a Function?",
+                content: "A **Function** is like a super-command. Instead of giving 10 separate orders, you group them into one named action.\n\nLike saying 'Make Sandwich' instead of 'Get bread, get cheese, put cheese on bread...'"
+            },
+            {
+                type: 'text',
+                title: "Step 2: Syntax",
+                content: "To create a function:\n`function plantTree() { ... }`\n\nTo use it:\n`plantTree();`"
+            },
+            {
+                type: 'interactive',
+                title: "Step 3: Define a Function",
+                prompt: "Create a function named 'plant': function plant() {}",
+                code: "function plant() {}",
+            },
+            {
+                type: 'interactive',
+                title: "Step 4: Use the Function",
+                prompt: "Now call your function! Type: plant()",
+                code: "plant()",
+                output: "Tree planted! 🌳"
             }
         ]
     }

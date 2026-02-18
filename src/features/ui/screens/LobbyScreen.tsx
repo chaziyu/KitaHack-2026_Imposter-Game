@@ -30,10 +30,12 @@ export const LobbyScreen = () => {
     useEffect(() => {
         if (!roomCode || !network) return;
 
-        network.subscribeToPlayers((updatedPlayers: PlayerState[]) => {
+        const unsubscribe = network.subscribeToPlayers((updatedPlayers: PlayerState[]) => {
             setLocalPlayers(updatedPlayers);
             setGlobalPlayers(updatedPlayers);
         });
+
+        return () => unsubscribe();
     }, [roomCode, network, setGlobalPlayers]);
 
     const [showRoleReveal, setShowRoleReveal] = useState(false);
@@ -64,15 +66,15 @@ export const LobbyScreen = () => {
             return;
         }
 
-        console.log(`[Lobby] Subscribing to rooms/${roomCode}`);
+        // console.log(`[Lobby] Subscribing to rooms/${roomCode}`);
 
         // Listen for Game Start
         const statusRef = ref(db, `rooms/${roomCode}/status`);
         const unsubStatus = onValue(statusRef, async (snapshot) => {
             const val = snapshot.val();
-            console.log("[Lobby] Status update:", val);
+            // console.log("[Lobby] Status update:", val);
             if (val === 'PLAYING') {
-                console.log("[Lobby] Status is PLAYING, fetching role and switching state...");
+                // console.log("[Lobby] Status is PLAYING, fetching role and switching state...");
 
                 // Fetch the player's role from Firebase
                 if (playerId && roomCode) {
@@ -99,24 +101,39 @@ export const LobbyScreen = () => {
 
         setAssignmentError(null);
 
-        console.log("[Lobby] handleStartGame called. Players:", players.length, players);
+        // console.log("[Lobby] handleStartGame called. Players:", players.length, players);
 
         // Validate minimum players
-        if (players.length < 3) {
+        if (players.length < 1) {
             console.warn("[Lobby] Not enough players:", players.length);
-            setAssignmentError(`Need at least 3 players to start Imposter Mode! (Current: ${players.length})`);
+            setAssignmentError(`Need at least 1 players to start Imposter Mode! (Current: ${players.length})`);
             return;
         }
 
-        console.log("[Lobby] Host starting game...");
+        // console.log("[Lobby] Host starting game...");
 
         try {
             // 1. Assign roles
             const playerIds = players.map(p => p.id);
             const roleAssignments = assignRoles(playerIds);
 
-            // 2. Sync roles to Firebase
-            await syncRolesToFirebase(roomCode, roleAssignments);
+            // 2. Sync roles to Firebase AND Reset Player State
+            const updates: Record<string, any> = {};
+
+            // Clear previous game data
+            updates[`rooms/${roomCode}/meeting`] = null; // Clear meeting data
+            updates[`rooms/${roomCode}/gamestate/hacks`] = null; // Clear sabotage history
+
+            // Assign roles and reset player status
+            for (const { playerId, role } of roleAssignments) {
+                updates[`rooms/${roomCode}/players/${playerId}/role`] = role;
+                updates[`rooms/${roomCode}/players/${playerId}/isAlive`] = true;
+                updates[`rooms/${roomCode}/players/${playerId}/status`] = 'active';
+                updates[`rooms/${roomCode}/players/${playerId}/x`] = 400; // Reset position (optional)
+                updates[`rooms/${roomCode}/players/${playerId}/y`] = 300;
+            }
+
+            await update(ref(db), updates);
 
             // 3. Set status to PLAYING, Initialize Timer, and Reset Level
             await update(ref(db, `rooms/${roomCode}`), {
@@ -129,7 +146,7 @@ export const LobbyScreen = () => {
                 }
             });
 
-            console.log("[Lobby] Roles assigned and game started successfully");
+            // console.log("[Lobby] Roles assigned and game started successfully");
         } catch (error) {
             console.error("[Lobby] Error starting game:", error);
             if (error instanceof Error) {

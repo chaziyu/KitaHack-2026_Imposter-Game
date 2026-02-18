@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
+import { PreloadScene } from './scenes/PreloadScene';
 import { useMeetingStore } from '../../stores/useMeetingStore';
 import { useGameStore } from '../../stores/useGameStore';
 import { SettingsUI } from '../ui/SettingsUI';
@@ -45,7 +46,7 @@ export const GameComponent = () => {
       },
       parent: 'phaser-container', // Attaches to the div below
       backgroundColor: '#000000',
-      scene: [MainScene], // Our scene list
+      scene: [PreloadScene, MainScene], // Our scene list
       physics: {
         default: 'arcade',
         arcade: {

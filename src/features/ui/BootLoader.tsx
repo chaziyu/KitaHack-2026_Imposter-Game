@@ -25,7 +25,7 @@ export const BootLoader = ({ onComplete }: { onComplete?: () => void }) => {
                     if (onComplete) onComplete();
                 }, 800);
             }
-        }, 600); // Add a line every 600ms
+        }, 150); // Add a line every 150ms (Speed up from 600ms)
 
         return () => clearInterval(interval);
     }, [onComplete]);

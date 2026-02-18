@@ -5,6 +5,10 @@ interface GreenCoderScoreModalProps {
     score: GreenCoderScore;
     onClose: () => void;
     isVisible: boolean;
+    stakes?: {
+        success: string;
+        failure: string;
+    };
 }
 
 /**
@@ -13,7 +17,8 @@ interface GreenCoderScoreModalProps {
 export const GreenCoderScoreModal: React.FC<GreenCoderScoreModalProps> = ({
     score,
     onClose,
-    isVisible
+    isVisible,
+    stakes
 }) => {
     if (!isVisible) return null;
 
@@ -61,10 +66,17 @@ export const GreenCoderScoreModal: React.FC<GreenCoderScoreModalProps> = ({
                     <div className="text-white text-xl font-semibold">{getScoreLabel(score.green_coder_score)}</div>
                 </div>
 
-                {/* Professor Gaia Message */}
-                <div className="bg-green-400/10 border-2 border-green-400/30 rounded-xl p-6 mb-8 flex gap-4 items-start">
-                    <div className="text-4xl shrink-0">🌍</div>
-                    <p className="text-white leading-relaxed m-0">{score.professor_gaia_message}</p>
+                {/* Professor Gaia Message & Narrative Outcome */}
+                <div className={`border-2 rounded-xl p-6 mb-8 flex gap-4 items-start ${score.green_coder_score >= 60 ? 'bg-green-400/10 border-green-400/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                    <div className="text-4xl shrink-0">{score.green_coder_score >= 60 ? '🌍' : '⚠️'}</div>
+                    <div className="flex flex-col gap-2">
+                        <p className="text-white leading-relaxed m-0 font-medium">{score.professor_gaia_message}</p>
+                        {stakes && (
+                            <p className={`text-sm m-0 italic ${score.green_coder_score >= 60 ? 'text-green-300' : 'text-red-300'}`}>
+                                {score.green_coder_score >= 60 ? stakes.success : stakes.failure}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Complexity Analysis */}

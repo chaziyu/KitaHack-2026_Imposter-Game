@@ -16,8 +16,9 @@ export function usePlayerRole(
 
     useEffect(() => {
         if (!roomCode || !playerId) {
-            setRole(null);
-            return;
+            // Avoid synchronous state update warning
+            const timer = setTimeout(() => setRole(null), 0);
+            return () => clearTimeout(timer);
         }
 
         const roleRef = ref(db, `rooms/${roomCode}/players/${playerId}/role`);

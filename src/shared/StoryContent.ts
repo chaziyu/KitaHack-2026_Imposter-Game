@@ -62,94 +62,31 @@ export const INTRO_SCENES: StoryScene[] = [
 
 export const VICTORY_SCENES: StoryScene[] = [
     {
-        id: 'powers-complete',
-        duration: 3500,
+        id: 'mission-complete',
+        duration: 4000,
         background: 'linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)',
-        visual: '⚡♻️💨',
-        text: 'You have mastered ALL THREE powers!',
-        narration: 'Solar Energy! Recycling! Air Quality!',
+        visual: '⚡♻️💨✨',
+        text: 'MISSION COMPLETE! Powers Combined!',
+        narration: 'Solar, Recycling, and Air systems are fully operational!',
         animation: 'combine'
     },
     {
-        id: 'earth-healing-start',
-        duration: 3000,
-        background: 'linear-gradient(135deg, #3b82f6 0%, #10b981 100%)',
-        visual: '🌍✨💫',
-        text: 'Watch as your powers begin to heal the Earth!',
-        narration: 'The planet responds to your efforts...',
-        animation: 'glow'
-    },
-    {
-        id: 'solar-impact',
-        duration: 3500,
-        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-        visual: '☀️🔆⚡🏙️',
-        text: 'Solar panels light up cities around the world!',
-        narration: 'Clean energy powers every home and school!',
-        animation: 'lights-on'
-    },
-    {
-        id: 'recycling-impact',
-        duration: 3500,
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        visual: '♻️🌊🐋🌈',
-        text: 'Oceans become clean! Marine life thrives again!',
-        narration: 'Recycling saves countless animals!',
-        animation: 'waves-clean'
-    },
-    {
-        id: 'air-impact',
-        duration: 3500,
-        background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
-        visual: '💨🌈🦋🌸',
-        text: 'The air becomes pure and fresh!',
-        narration: 'People breathe freely. Nature flourishes!',
-        animation: 'wind'
-    },
-    {
-        id: 'earth-healed',
+        id: 'earth-restored',
         duration: 4000,
         background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-        visual: '🌍💚✨🎉',
-        text: 'Earth is SAVED! The world is beautiful again!',
-        narration: 'Trees grow. Animals play. Cities shine!',
+        visual: '🌍💚🦋🏙️',
+        text: 'The Earth is Healing! Nature Thrives!',
+        narration: 'Clean energy, pure air, and healthy oceans restored!',
         animation: 'bloom'
     },
     {
-        id: 'celebration',
-        duration: 4500,
-        background: 'linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)',
-        visual: '🎉🎊🏆🌟',
-        text: 'YOU DID IT! You saved the entire world!',
-        narration: 'You are Earth\'s Guardian! A true hero!',
-        animation: 'confetti'
-    },
-    {
-        id: 'guardian-thanks',
-        duration: 4000,
+        id: 'hero-call',
+        duration: 5000,
         background: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)',
-        visual: '🧙‍♀️💖👤',
-        text: 'Professor Gaia: "I knew you were special!"',
-        narration: 'Thank you, brave hero, for saving our home.',
-        animation: 'embrace'
-    },
-    {
-        id: 'ongoing-mission',
-        duration: 4000,
-        background: 'linear-gradient(135deg, #1e40af 0%, #10b981 100%)',
-        visual: '🌍🛡️💪',
-        text: 'But remember: Earth needs protecting every day...',
-        narration: 'Keep learning. Keep coding. Keep Earth healthy!',
-        animation: 'float'
-    },
-    {
-        id: 'real-world-call',
-        duration: 4500,
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-        visual: '♻️🌳💚',
-        text: 'In the real world, YOU can help too!',
-        narration: 'Recycle. Save energy. Protect nature. Code for good!',
-        animation: 'pulse'
+        visual: '🧙‍♀️🏆🦸‍♂️',
+        text: 'You are a true Earth Guardian!',
+        narration: 'Gaia: "Thank you! Now go protect the REAL world too!"',
+        animation: 'celebration'
     }
 ];
 
@@ -173,6 +110,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         highlight: false,
         arrow: false
     },
+    // --- NEW CONTROL GUIDE ADDED HERE ---
+    {
+        id: 'controls',
+        target: 'game-canvas',
+        position: 'center',
+        title: 'How to Move & Play 🎮',
+        description: '⌨️ MOVEMENT: Use W, A, S, D keys to walk around.\n\n📍 INTERACT: Simply walk onto any Station Icon to start the task or tutorial automatically!',
+        highlight: false,
+        arrow: false
+    },
+    // ------------------------------------
     {
         id: 'academies',
         target: 'academy-stations',
@@ -198,7 +146,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         title: 'Need Help? Ask Professor Gaia! 💡',
         description: 'Stuck on code? Professor Gaia can help detect bugs and guide you! (Extra helpful in Kids Mode)',
         highlight: true,
-        arrow: false
+        arrow: true // Changed to true to make it more obvious
     },
     {
         id: 'detective-work',

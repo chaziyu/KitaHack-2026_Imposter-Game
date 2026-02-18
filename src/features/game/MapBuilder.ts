@@ -7,6 +7,9 @@ export class MapBuilder {
     private map!: Phaser.Tilemaps.Tilemap;
     private wallLayer!: Phaser.Tilemaps.TilemapLayer;
     private doorTiles: { x: number, y: number }[] = [];
+    
+    // NEW: Store references to lights so we can turn them off
+    private ceilingLights: Phaser.GameObjects.Light[] = [];
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
@@ -119,7 +122,9 @@ export class MapBuilder {
             wasteAcademyZone,
             oxygenAcademyZone,
             spawnPoint,
-            doorTiles: this.doorTiles
+            doorTiles: this.doorTiles,
+            // NEW: Return the builder instance so MainScene can control lights
+            builder: this 
         };
     }
 
@@ -132,6 +137,14 @@ export class MapBuilder {
                 tile.setCollision(!isOpen);
                 tile.setVisible(!isOpen);
             }
+        });
+    }
+
+    // NEW: Function to toggle lights for blackout
+    public setBlackout(isBlackout: boolean) {
+        this.ceilingLights.forEach(light => {
+            // If blackout, intensity 0. If normal, restore to 0.6
+            light.setIntensity(isBlackout ? 0 : 0.6);
         });
     }
 
@@ -168,11 +181,14 @@ export class MapBuilder {
         ];
 
         positions.forEach(pos => {
-            this.scene.lights.addLight(
+            const light = this.scene.lights.addLight(
                 pos.x * TILE_SIZE,
                 pos.y * TILE_SIZE,
                 lightConfig.radius
             ).setColor(lightConfig.color).setIntensity(lightConfig.intensity);
+
+            // NEW: Store the light in our array
+            this.ceilingLights.push(light);
         });
     }
 
@@ -203,7 +219,8 @@ export class MapBuilder {
             dbZone: null, apiZone: null, hubZone: null, meetingZone: null,
             solarAcademyZone: null, wasteAcademyZone: null, oxygenAcademyZone: null,
             spawnPoint: null,
-            doorTiles: []
+            doorTiles: [],
+            builder: this
         };
     }
 }

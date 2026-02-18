@@ -4,28 +4,83 @@
  */
 
 // Debug helper for API key troubleshooting
-import '../utils/debugGoogleAI';
+
 
 const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY;
 
-// Model fallback priority: Best → Smallest
-const GEMMA_MODELS = [
-    'gemma-3-27b-it',  // Most capable (27B parameters)
-    'gemma-3-12b-it',  // Good balance (12B parameters)
-    'gemma-3-4b-it',   // Faster (4B parameters)
-    'gemma-3-2b-it'    // Fastest/Fallback (2B parameters)
+// Model fallback priorities for different AI features
+
+// Chaos Engine & Green Code Analyzer: Prioritize intelligence (27B first)
+const CHAOS_ENGINE_MODELS = [
+    'gemma-3-27b-it',  // Most capable for complex bug generation
+    'gemma-3-12b-it',  // Good balance
+    'gemma-3-4b-it',   // Faster
+    'gemma-3-2b-it'    // Fastest/Fallback
 ];
+
+// Professor Gaia: Prioritize speed (12B first for faster hints)
+const PROFESSOR_GAIA_MODELS = [
+    'gemma-3-12b-it',  // Faster responses for real-time hints
+    'gemma-3-4b-it',   // Even faster
+    'gemma-3-2b-it'    // Fastest/Fallback
+];
+
+// Green Code Analyzer: Prioritize 27B for depth/quality as requested
+// Green Code Analyzer: Prioritize speed per user request (10s+ is too long)
+const GREEN_CODE_MODELS = [
+    'gemma-3-2b-it',   // Fastest possible model
+    'gemma-3-4b-it',   // Very Fast backup
+    'gemma-3-12b-it',  // Good balance
+    'gemma-3-27b-it'   // Slow fallback
+];
+
+// ... (skipping unchanged code)
+
+// ... (skipping unchanged code)
+
+/**
+ * Build the Green Coder analysis prompt (Optimized for 27B speed/tokens)
+ */
+
+
+// ... (existing helper function and other code remains same, skipping lines 36-660)
+
+
 
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+interface GenerationConfig {
+    temperature?: number;
+    topK?: number;
+    topP?: number;
+    maxOutputTokens?: number;
+    stopSequences?: string[];
+}
+
+interface GeminiPart {
+    text: string;
+}
+
+interface GeminiContent {
+    parts: GeminiPart[];
+}
+
+interface GeminiCandidate {
+    content: GeminiContent;
+}
+
+interface GeminiResponse {
+    candidates?: GeminiCandidate[];
+}
+
 /**
- * Try API call with model fallback
+ * Generic API call with custom model priority list
  * Attempts models in order until one succeeds
  */
-async function callGemmaWithFallback(prompt: string, config: any): Promise<any> {
+async function callGemmaWithModelList(prompt: string, config: GenerationConfig, modelList: string[]): Promise<GeminiResponse> {
     let lastError: Error | null = null;
 
-    for (const model of GEMMA_MODELS) {
+    for (const model of modelList) {
         try {
             const url = `${API_BASE_URL}/${model}:generateContent?key=${API_KEY}`;
 
@@ -40,7 +95,7 @@ async function callGemmaWithFallback(prompt: string, config: any): Promise<any> 
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(`✅ Success using model: ${model}`);
+                // console.log(`✅ Success using model: ${model}`);
                 return data;
             }
 
@@ -56,7 +111,21 @@ async function callGemmaWithFallback(prompt: string, config: any): Promise<any> 
     }
 
     // All models failed
-    throw lastError || new Error('All Gemma models failed');
+    throw lastError || new Error('All models failed');
+}
+
+/**
+ * Chaos Engine fallback (27B → 12B → 4B → 2B)
+ */
+async function callChaosEngine(prompt: string, config: GenerationConfig): Promise<GeminiResponse> {
+    return callGemmaWithModelList(prompt, config, CHAOS_ENGINE_MODELS);
+}
+
+/**
+ * Professor Gaia fallback (12B → 4B → 2B)
+ */
+async function callProfessorGaia(prompt: string, config: GenerationConfig): Promise<GeminiResponse> {
+    return callGemmaWithModelList(prompt, config, PROFESSOR_GAIA_MODELS);
 }
 
 // Enhanced debugging for API key issues
@@ -80,8 +149,8 @@ if (!API_KEY) {
         Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
     );
 } else {
-    console.log('✅ Gemini API Key loaded successfully');
-    console.log('🔑 Key preview:', API_KEY.substring(0, 10) + '...' + API_KEY.substring(API_KEY.length - 4));
+    // console.log('✅ Gemini API Key loaded successfully');
+    // console.log('🔑 Key preview:', API_KEY.substring(0, 10) + '...' + API_KEY.substring(API_KEY.length - 4));
 }
 
 interface HintRequest {
@@ -134,9 +203,9 @@ export async function getHint(request: HintRequest): Promise<HintResponse> {
     try {
         const prompt = buildPrompt(request);
 
-        const data = await callGemmaWithFallback(prompt, {
+        const data = await callProfessorGaia(prompt, {
             temperature: 0.7,
-            maxOutputTokens: 500,
+            maxOutputTokens: 300,
         });
         const hint = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate hint.';
 
@@ -170,9 +239,9 @@ export async function chatWithMentor(request: ChatRequest): Promise<ChatResponse
     try {
         const prompt = buildChatPrompt(request);
 
-        const data = await callGemmaWithFallback(prompt, {
+        const data = await callProfessorGaia(prompt, {
             temperature: 0.8,
-            maxOutputTokens: 400,
+            maxOutputTokens: 300,
         });
         const message = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I\'m having trouble responding right now. Try again!';
 
@@ -196,17 +265,8 @@ export async function chatWithMentor(request: ChatRequest): Promise<ChatResponse
 function buildChatPrompt(request: ChatRequest): string {
     const { message, challengeDescription, currentCode, conversationHistory } = request;
 
-    let prompt = `You are Professor Gaia, an AI mentor in a coding game for children (ages 8-14). 
-You are the Ancient Guardian of Earth who helps young heroes learn coding to save the planet.
-
-Your personality:
-- Warm, encouraging, and patient like a beloved teacher
-- Enthusiastic about the environment and coding
-- Uses simple, child-friendly language
-- Includes emojis to make conversations fun
-- Always connects coding to environmental impact
-- Celebrates small wins and encourages learning from mistakes
-
+    let prompt = `You are Professor Gaia, the Ancient Guardian of Earth and a warm, patient AI coding mentor for kids (8-14).
+Personality: Enthusiastic about eco-coding, uses simple language/emojis, connects code to planet impact.
 `;
 
     // Add context if available
@@ -226,7 +286,7 @@ Your personality:
         });
     }
 
-    prompt += `\n\nStudent's question: ${message}\n\nYour response (as Professor Gaia, keep it under 3 sentences, use emojis):`;
+    prompt += `\nQuestion: ${message}\nResponse (Gaia, <3 sentences, use emojis):`;
 
     return prompt;
 }
@@ -248,43 +308,13 @@ ${currentCode}
 
     switch (difficulty) {
         case 'gentle':
-            return `${baseContext}
-
-Give a gentle hint that guides the child toward the solution without giving away the answer. 
-- Use encouraging, friendly language with Professor Gaia's warm personality
-- Ask guiding questions
-- Point out what they might be missing
-- Keep it under 2-3 sentences
-- Use emojis to make it fun
-- Remember you're Professor Gaia, Earth's Guardian
-
-Hint:`;
+            return `${baseContext}\nGive a gentle hint (2-3 sentences, Gaia persona, emojis) guiding them without giving the answer. Ask a guiding question.`;
 
         case 'specific':
-            return `${baseContext}
-
-The child has tried but still needs help. Give a more specific hint:
-- Explain what specific code they need to add
-- Give an example of the syntax (but not the complete solution)
-- Explain how this code helps solve the environmental problem
-- Keep it simple and encouraging
-- Use emojis
-- Speak as Professor Gaia
-
-Hint:`;
+            return `${baseContext}\nGive a specific hint: Explain the code needed, syntax example (not full solution), and environmental link. Gaia persona, emojis.`;
 
         case 'solution':
-            return `${baseContext}
-
-The child has struggled and needs to see a solution. As Professor Gaia, provide:
-- Complete working code
-- Line-by-line explanation of what each part does
-- Explain how this helps save Earth
-- Encourage them to try modifying it
-- Use simple, warm language
-- Celebrate their persistence
-
-Solution:`;
+            return `${baseContext}\nProvide: Full working code, brief line explanation, and eco-impact. Encourage persistence. Gaia persona, emojis.`;
 
         default:
             return baseContext;
@@ -350,9 +380,9 @@ export async function explainError(request: ErrorExplanationRequest): Promise<Er
     try {
         const prompt = buildErrorPrompt(request);
 
-        const data = await callGemmaWithFallback(prompt, {
-            temperature: 0.6, // Lower temperature for more precise error explanations
-            maxOutputTokens: 300,
+        const data = await callProfessorGaia(prompt, {
+            temperature: 0.6,
+            maxOutputTokens: 200,
         });
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I couldn\'t quite understand that error.';
 
@@ -372,28 +402,14 @@ export async function explainError(request: ErrorExplanationRequest): Promise<Er
         };
     }
 }
-
 function buildErrorPrompt(request: ErrorExplanationRequest): string {
     const { code, error, challengeDescription, language } = request;
-    return `You are Professor Gaia, the friendly AI mentor for a children's coding game.
-    
-The student has encountered an error in their ${language || 'code'}.
-    
-Context:
-- Challenge: ${challengeDescription || 'Unknown'}
-- Code:
-\`\`\`
-${code}
-\`\`\`
-- Error Message: "${error}"
+    return `You are Professor Gaia, the eco-mentor. Explain this ${language || 'code'} error simply to a child.
+Challenge: ${challengeDescription || 'Unknown'}
+Code: \`${code}\`
+Error: "${error}"
 
-Your task:
-1. Explain what this error means in simple, child-friendly terms (metaphors are great!).
-2. Don't simply give the answer, but point them to the specific line or concept that is broken.
-3. Be encouraging! Errors are part of learning.
-4. Keep it short (max 2-3 sentences).
-5. Use emojis.
-6. Return ONLY the explanation message.`;
+Rules: 1. Use metaphors. 2. Point to the issue. 3. Be encouraging. 4. Max 2-3 sentences. 5. Emojis. 6. Return ONLY the message.`;
 }
 
 // --- Dynamic Sabotage Generation ---
@@ -445,13 +461,14 @@ export async function generateSabotage(request: SabotageRequest): Promise<Sabota
         
         Ensure the sabotaged code is syntactically valid enough to "run" but fail logic or loop forever, unless the concept is "syntax error".`;
 
-        const data = await callGemmaWithFallback(prompt, {
+        const data = await callChaosEngine(prompt, {
             temperature: 0.9,
             maxOutputTokens: 1000
         });
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         // Clean markdown code blocks if present to get pure JSON
+        if (!text) throw new Error('No content generated');
         const jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const result = JSON.parse(jsonText);
 
@@ -496,24 +513,15 @@ export async function reviewCode(request: ReviewRequest): Promise<ReviewResponse
     if (!API_KEY) return { success: false, rating: 0, feedback: '', tip: '' };
 
     try {
-        const prompt = `You are Professor Gaia. A student just solved this challenge: "${request.originalChallenge}".
-        
-        Their Code:
-        \`\`\`
-        ${request.code}
-        \`\`\`
+        const prompt = `Professor Gaia review: Challenge "${request.originalChallenge}".
+Code: \`${request.code}\`
+Return JSON: {"rating": 1-5, "feedback": "Encouraging remark", "tip": "Optimization tip"}`;
 
-        Provide a JSON review:
-        {
-            "rating": (integer 1-5 based on efficiency and cleanliness),
-            "feedback": "Encouraging remark exploring what they did well (warm tone)",
-            "tip": "One cool coding tip to make it even better next time"
-        }`;
-
-        const data = await callGemmaWithFallback(prompt, {
+        const data = await callProfessorGaia(prompt, {
             temperature: 0.7
         });
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error('No content generated');
         const jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const result = JSON.parse(jsonText);
 
@@ -537,7 +545,6 @@ import type {
     DynamicLevel,
     GreenCoderRequest,
     GreenCoderResponse,
-    GreenCoderScore
 } from '../types/ai-levels';
 
 /**
@@ -556,7 +563,7 @@ export async function generateDynamicLevel(request: DynamicLevelRequest): Promis
     try {
         const prompt = buildChaosEnginePrompt(request);
 
-        const data = await callGemmaWithFallback(prompt, {
+        const data = await callChaosEngine(prompt, {
             temperature: 0.9, // Higher creativity for varied levels
             maxOutputTokens: 1500
         });
@@ -575,7 +582,7 @@ export async function generateDynamicLevel(request: DynamicLevelRequest): Promis
             throw new Error('Invalid level structure from AI');
         }
 
-        console.log(`[AI] Generated dynamic level: ${level.title} (${level.bug_type})`);
+        // console.log(`[AI] Generated dynamic level: ${level.title} (${level.bug_type})`);
 
         return {
             success: true,
@@ -646,95 +653,89 @@ export async function analyzeGreenCode(request: GreenCoderRequest): Promise<Gree
     try {
         const prompt = buildGreenCoderPrompt(request);
 
-        const data = await callGemmaWithFallback(prompt, {
-            temperature: 0.6, // Lower temp for consistent analysis
-            maxOutputTokens: 1200
-        });
+        const data = await callGemmaWithModelList(prompt, {
+            temperature: 0.2, // Very low temp for speed/determinism
+            maxOutputTokens: 1024, // Increased to prevent truncation (was 500)
+        }, GREEN_CODE_MODELS);
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (!text) {
-            throw new Error('No response from AI');
+        if (!text) throw new Error('No response from AI');
+
+        try {
+            const jsonText = cleanJson(text);
+            return { success: true, score: JSON.parse(jsonText) };
+        } catch (parseError) {
+            console.error("FAILED TO PARSE JSON. Raw JSON Text:", text);
+            throw new Error(`JSON Parse Failed: ${parseError}`);
         }
-
-        // Clean and parse JSON
-        const jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const score: GreenCoderScore = JSON.parse(jsonText);
-
-        console.log(`[AI] Green Coder Score: ${score.green_coder_score}/100`);
-
-        return {
-            success: true,
-            score
-        };
-
     } catch (error) {
         console.error('Error analyzing green code:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
 
 /**
- * Build the Green Coder analysis prompt
+ * Helper to clean and extra JSON from AI responses
+ * Handles markdown blocks, whitespace, and potential garbage text
+ */
+function cleanJson(text: string): string {
+    if (!text) return "{}";
+
+    // 1. Remove Markdown code blocks
+    let cleaned = text.replace(/```json/g, '').replace(/```/g, '');
+
+    // 2. Find the first '{' and last '}' to isolate the JSON object
+    const startIndex = cleaned.indexOf('{');
+    const endIndex = cleaned.lastIndexOf('}');
+
+    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        cleaned = cleaned.substring(startIndex, endIndex + 1);
+    }
+
+    return cleaned.trim();
+}
+
+/**
+ * Build the Green Coder analysis prompt (Micro-optimized with One-Shot)
  */
 function buildGreenCoderPrompt(request: GreenCoderRequest): string {
     const { player_code, solution_code, challenge_description, language } = request;
 
-    return `ROLE:
-You are Professor Gaia's "Green Code Analyzer," an AI system that evaluates coding efficiency and translates it into environmental impact. You analyze player solutions and calculate their "Green Coder Score" based on algorithmic efficiency.
+    // One-Shot Prompt to force strict JSON and brevity
+    return `Analyze Code Efficiency. Return JSON.
+    
+EXAMPLE INPUT:
+Task: Loop to 10
+Input: javascript
+Target: \`for(let i=0;i<10;i++)\`
+Player: \`while(true){}\`
 
-INPUT:
-Challenge: ${challenge_description}
-Language: ${language}
-
-Optimal Solution:
-\`\`\`${language}
-${solution_code}
-\`\`\`
-
-Player's Solution:
-\`\`\`${language}
-${player_code}
-\`\`\`
-
-INSTRUCTIONS:
-1. Big-O Analysis: Analyze the time complexity of the player's solution
-2. Efficiency Comparison: Compare it to the optimal solution's complexity
-3. Environmental Impact: Calculate the "energy waste" of inefficient code
-4. Green Coder Score: Rate 0-100 based on efficiency (100 = optimal, 0 = extremely wasteful)
-5. Real-World Equivalency: Convert energy metrics to tangible examples
-6. Output Format: Return ONLY valid JSON. Do not use markdown code blocks.
-
-SCORING LOGIC:
-- Same Big-O as optimal solution: 100 points
-- One level worse (e.g., O(n log n) vs O(n)): 75 points
-- Two levels worse (e.g., O(n^2) vs O(n)): 50 points
-- Three+ levels worse or exponential: 25 points or less
-- Bonus/Penalty: Adjust ±10 points for code clarity, edge cases, best practices
-
-ENERGY CALCULATION:
-Estimate CPU cycles saved by using optimal vs. player's algorithm.
-Assume: 1 billion extra operations = 1 watt-hour of energy waste
-Scale based on real-world usage scenarios (e.g., "if run 1 million times per day...")
-
-JSON STRUCTURE:
+EXAMPLE JSON OUTPUT:
 {
-  "green_coder_score": 85,
-  "player_complexity": "O(n^2)",
-  "optimal_complexity": "O(n)",
-  "complexity_comparison": "Your solution uses nested loops, which is less efficient than the linear approach.",
+  "green_coder_score": 10, 
+  "player_complexity": "O(infinity)",
+  "optimal_complexity": "O(1)",
+  "complexity_comparison": "Player code loops forever",
   "energy_impact": {
     "energy_wasted_kwh": 0.5,
-    "real_world_equivalent": "Running this code 1 million times wastes enough energy to charge 100 smartphones",
-    "sdg_message": "By optimizing this algorithm, we could save 500 kWh per day in data centers worldwide - equivalent to powering 20 homes!"
+    "real_world_equivalent": "Powering a lightbulb",
+    "sdg_message": "Infinite loops waste energy"
   },
-  "feedback": "Great job fixing the bug! Your solution works correctly.",
-  "optimization_tip": "Try using a Set or HashMap to check for duplicates in O(1) time instead of nested loops.",
-  "professor_gaia_message": "Well done, young hero! 🌍 Your code saves the day, but we can make it even greener! ✨"
+  "feedback": "Check your loop condition",
+  "optimization_tip": "Use a for loop",
+  "professor_gaia_message": "Energy is draining fast!"
 }
 
-Analyze the code now:`;
-}
+ACTUAL INPUT:
+Task: ${challenge_description}
+Input: ${language}
+Target: \`${solution_code}\`
+Player: \`${player_code}\`
 
+High Importance:
+1. Big-O Time.
+2. Green Score (0-100).
+3. JSON ONLY.
+
+GENERATE JSON:`;
+}

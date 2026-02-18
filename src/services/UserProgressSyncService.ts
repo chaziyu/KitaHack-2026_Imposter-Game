@@ -48,7 +48,7 @@ export async function saveUserProgress(userId: string, progress: CloudUserProgre
             ...progress,
             lastPlayedAt: Date.now()
         });
-        console.log('User progress saved to Firebase');
+        // console.log('User progress saved to Firebase');
     } catch (error) {
         console.error('Failed to save user progress:', error);
         throw error;

@@ -37,10 +37,10 @@ export interface NetworkService {
   disconnect(): void;
 
   // Listen for other players moving/joining
-  subscribeToPlayers(callback: (players: PlayerState[]) => void): void;
+  subscribeToPlayers(callback: (players: PlayerState[]) => void): () => void;
 
   // Listen for Meeting Updates
-  subscribeToMeeting(callback: (state: MeetingState) => void): void;
+  subscribeToMeeting(callback: (state: MeetingState) => void): () => void;
 
   // Send my own position to the server
   sendPlayerMove(x: number, y: number): void;
@@ -57,12 +57,12 @@ export interface NetworkService {
   // Chat
   playerId: string; // Expose ID for UI
   sendChatMessage(text: string, playerName: string): void;
-  subscribeToChat(callback: (messages: ChatMessage[]) => void): void;
+  subscribeToChat(callback: (messages: ChatMessage[]) => void): () => void;
   updatePlayerCustomization(skin: string, tint: number): void;
 
   // Notifications
   sendNotification(message: string, type?: 'success' | 'error' | 'info'): void;
-  subscribeToNotifications(callback: (message: string, type: 'success' | 'error' | 'info') => void): void;
+  subscribeToNotifications(callback: (message: string, type: 'success' | 'error' | 'info') => void): () => void;
 
 
   // Team Challenge Tracking & Victory
@@ -70,7 +70,7 @@ export interface NetworkService {
   subscribeToGameStatus(callback: (status: string) => void): void; // Simplified wrapper
 
   // Global Timer
-  subscribeToTimer(callback: (remainingTime: number) => void): void;
+  subscribeToTimer(callback: (endTime: number) => void): () => void;
   applyTimerPenalty(seconds: number): void;
 }
 

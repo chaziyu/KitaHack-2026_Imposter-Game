@@ -17,6 +17,9 @@ interface MeetingState {
         reason: 'VOTE_TIE' | 'VOTE_SKIP' | 'VOTE_EJECT' | 'TASK_WIN' | 'IMPOSTER_WIN';
     } | null;
 
+    // Added cooldownEnd here
+    cooldownEnd?: number;
+
     // Actions (Local updates from Subscriber)
     setMeetingState: (newState: Partial<MeetingState>) => void;
 
@@ -34,6 +37,9 @@ export const useMeetingStore = create<MeetingState & { setMeetingState: (s: Part
     chatMessages: [],
     result: null,
     outcome: null,
+    
+    // 1. ADDED INITIAL VALUE HERE
+    cooldownEnd: 0,
 
     setMeetingState: (newState) => set((state) => ({ ...state, ...newState })),
 
@@ -47,6 +53,9 @@ export const useMeetingStore = create<MeetingState & { setMeetingState: (s: Part
         votes: {},
         chatMessages: [],
         result: null,
-        outcome: null
+        outcome: null,
+        
+        // 2. ADDED RESET VALUE HERE (optional, but good practice)
+        cooldownEnd: 0 
     })
 }));

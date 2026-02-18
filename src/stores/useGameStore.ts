@@ -38,7 +38,9 @@ interface GameStore {
     setIsHost: (isHost: boolean) => void;
     setGameState: (state: 'MENU' | 'LOBBY' | 'GAME') => void;
 
-
+    // Level State
+    currentLevel: number;
+    setLevel: (level: number) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -100,6 +102,10 @@ export const useGameStore = create<GameStore>((set) => ({
     setPlayerTint: (tint) => set({ playerTint: tint }),
     setIsHost: (isHost) => set({ isHost }),
     setGameState: (gameState) => set({ gameState }),
+
+    // Level State
+    currentLevel: 1,
+    setLevel: (level) => set({ currentLevel: level }),
 
 
 }));

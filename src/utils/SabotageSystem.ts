@@ -1,7 +1,8 @@
 import { db } from '../firebaseConfig';
 import { ref, update, get } from 'firebase/database';
+import { APP_CONSTANTS } from './AppConstants';
 
-export type SabotageType = 'syntax_error' | 'logic_swap' | 'clear_line' | 'power_cut';
+export type SabotageType = 'syntax_error' | 'logic_swap' | 'clear_line' | 'power_cut' | 'seal_doors' | 'lock_terminals';
 
 export interface SabotageResult {
     success: boolean;
@@ -122,8 +123,8 @@ export async function triggerSabotage(
         if (fileId) {
             const fileRef = ref(db, `gamestate/files/${fileId}/content`);
             const snapshot = await get(fileRef);
-            currentCode = snapshot.val() || '';
-        } else if (type !== 'power_cut') {
+            currentCode = (snapshot.val() as string) || '';
+        } else if (type !== 'power_cut' && type !== 'seal_doors' && type !== 'lock_terminals') {
             return { success: false, newCode: '', description: 'Target file required for this sabotage' };
         }
 
@@ -143,6 +144,12 @@ export async function triggerSabotage(
                 // Power cut doesn't modify code, just triggers global state
                 result = { success: true, newCode: currentCode, description: 'Power grid cut!' };
                 break;
+            case 'seal_doors':
+                result = { success: true, newCode: currentCode, description: 'Doors sealed!' };
+                break;
+            case 'lock_terminals':
+                result = { success: true, newCode: currentCode, description: 'Terminals locked!' };
+                break;
             default:
                 return { success: false, newCode: currentCode, description: 'Unknown sabotage type' };
         }
@@ -158,12 +165,28 @@ export async function triggerSabotage(
             updates[`rooms/${roomCode}/gamestate/power`] = {
                 status: 'OFF',
                 timestamp: Date.now(),
-                failureTime: Date.now() + 61000, // 60 seconds + 1s buffer
-                triggeredBy: targetPlayerId // In this context it's the imposter
+                failureTime: Date.now() + 60000 + 1000, // 60s + 1s buffer
+                triggeredBy: targetPlayerId
+            };
+        } else if (type === 'seal_doors') {
+            updates[`rooms/${roomCode}/gamestate/doors`] = {
+                status: 'SEALED',
+                timestamp: Date.now(),
+                endTime: Date.now() + 30000, // 30s duration
+                triggeredBy: targetPlayerId
+            };
+        } else if (type === 'lock_terminals') {
+            updates[`rooms/${roomCode}/gamestate/terminals`] = {
+                status: 'LOCKED',
+                timestamp: Date.now(),
+                endTime: Date.now() + 30000, // 30s duration
+                triggeredBy: targetPlayerId
             };
         } else {
             updates[`gamestate/files/${fileId}`] = {
                 content: result.newCode,
+                // Critical: Mark as corrupted so Deploy Terminal detects it!
+                isCorrupted: true,
                 lastSabotage: {
                     type,
                     timestamp: Date.now(),
@@ -175,12 +198,13 @@ export async function triggerSabotage(
         // Update sabotage cooldown in room
         updates[`rooms/${roomCode}/sabotage`] = {
             lastAction: Date.now(),
-            cooldownEnd: Date.now() + 30000 // 30 seconds
+
+            cooldownEnd: Date.now() + APP_CONSTANTS.GAME.SABOTAGE_COOLDOWN
         };
 
         await update(ref(db), updates);
 
-        console.log(`[Sabotage] ${type} applied:`, result.description);
+        // console.log(`[Sabotage] ${type} applied:`, result.description);
         return result;
 
     } catch (error) {

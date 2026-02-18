@@ -59,10 +59,8 @@ export const TaskBoard = () => {
                     <div key={task.id} className="text-sm border-b border-gray-800 pb-2 last:border-0">
                         <div className="flex justify-between items-center mb-1">
                             <span className="font-mono font-bold text-gray-200">{task.name}</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${task.status === 'PASS' ? 'bg-green-900/50 text-green-300 border-green-700' :
-                                task.status === 'FAIL' ? 'bg-red-900/50 text-red-300 border-red-700' : 'bg-yellow-900/50 text-yellow-300 border-yellow-700'
-                                }`}>
-                                {task.status}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-700 bg-blue-900/50 text-blue-300`}>
+                                ACTIVE
                             </span>
                         </div>
                         <p className="text-gray-400 text-xs leading-relaxed">{task.desc}</p>

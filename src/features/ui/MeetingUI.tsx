@@ -40,11 +40,8 @@ export const MeetingUI = () => {
         }
     }, [status]);
 
-    // Editor Ref — typed to the Monaco editor instance interface we actually use
-    const editorRef = React.useRef<{
-        getModel: () => { deltaDecorations: (old: string[], next: unknown[]) => string[] } | null;
-        revealLineInCenter: (line: number) => void;
-    } | null>(null);
+    // Editor Ref — using 'any' to bypass Monaco type complexity
+    const editorRef = React.useRef<any>(null);
     const decorationsRef = React.useRef<string[]>([]);
 
     useEffect(() => {
@@ -223,17 +220,20 @@ export const MeetingUI = () => {
     // Blame Code Highlighting (Same as before)
     useEffect(() => {
         if (!editorRef.current || !window.monaco) return;
-        const model = editorRef.current.getModel();
+
+        // Use editor instance for deltaDecorations
+        const editor = editorRef.current;
+        const model = editor.getModel();
         if (!model) return;
 
         if (highlightedLine !== null && highlightedLine.fileId === selectedFile) {
-            decorationsRef.current = model.deltaDecorations(decorationsRef.current, [{
+            decorationsRef.current = editor.deltaDecorations(decorationsRef.current, [{
                 range: new window.monaco.Range(highlightedLine.line, 1, highlightedLine.line, 1),
                 options: { isWholeLine: true, className: 'blame-line-highlight', glyphMarginClassName: 'blame-glyph' }
             }]);
-            editorRef.current.revealLineInCenter(highlightedLine.line);
+            editor.revealLineInCenter(highlightedLine.line);
         } else {
-            decorationsRef.current = model.deltaDecorations(decorationsRef.current, []);
+            decorationsRef.current = editor.deltaDecorations(decorationsRef.current, []);
         }
     }, [highlightedLine, selectedFile]);
 

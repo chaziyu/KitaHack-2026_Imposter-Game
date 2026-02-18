@@ -24,7 +24,7 @@ export const CentralTerminal = () => {
 
         // Simulate a slight delay for dramatic effect
         setTimeout(() => {
-            const result = runSystemTests(files as Record<string, { testStatus: string }>);
+            const result = runSystemTests(files as unknown as Record<string, { testStatus: string }>);
             setLogs(result.logs);
             setStatus(result.success ? 'PASS' : 'FAIL');
 

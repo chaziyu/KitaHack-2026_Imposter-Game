@@ -16,11 +16,11 @@ export const TaskBoard = () => {
     useEffect(() => {
         const tasksRef = ref(db, 'gamestate/files');
         return onValue(tasksRef, (snapshot) => {
-            const data = snapshot.val();
+            const data = snapshot.val() as Record<string, { name?: string; testStatus?: string; description?: string }> | null;
             if (data) {
                 // Convert the file list into an array of tasks
                 const taskList = Object.entries(data).map(([key, file]) => {
-                    const f = file as { name?: string; testStatus?: string; description?: string };
+                    const f = file;
                     return {
                         id: key,
                         name: f.name ?? key,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGameStore } from '../../stores/useGameStore';
+import { useGameStore } from '../../../stores/useGameStore';
 
 interface FeedbackModalProps {
     isOpen: boolean;
@@ -22,8 +22,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         setIsSubmitting(true);
         try {
             if (network && 'submitFeedback' in network) {
-                // @ts-ignore - We know it exists but interface might not be updated yet in TS
-                await (network as any).submitFeedback(rating, comment);
+                // @ts-expect-error -- submitFeedback exists at runtime but is not yet in the TS interface
+                await (network as { submitFeedback: (rating: number, comment: string) => Promise<void> }).submitFeedback(rating, comment);
             } else {
                 console.log('Feedback submitted (simulated):', { rating, comment });
                 // Fallback for dev/no-network

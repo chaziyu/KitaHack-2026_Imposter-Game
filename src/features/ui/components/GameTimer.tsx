@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGameStore } from '../../stores/useGameStore';
+import { useGameStore } from '../../../stores/useGameStore';
 
 export const GameTimer = () => {
     const { network, isHost, roomCode } = useGameStore();
@@ -8,13 +8,13 @@ export const GameTimer = () => {
     useEffect(() => {
         if (!network) return;
 
-        network.subscribeToTimer((time) => {
+        network.subscribeToTimer((time: number) => {
             setTimeLeft(time);
 
             // Host checks for timeout victory for Imposters
             if (time <= 0 && isHost && roomCode) {
                 import('firebase/database').then(({ ref, set }) => {
-                    import('../../firebaseConfig').then(({ db }) => {
+                    import('../../../firebaseConfig').then(({ db }) => {
                         // Double check status to avoid spamming
                         // trigger Imposter Win
                         set(ref(db, `rooms/${roomCode}/status`), 'VICTORY_IMPOSTER');

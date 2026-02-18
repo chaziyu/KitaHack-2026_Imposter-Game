@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useGameStore } from '../../stores/useGameStore';
-import { db } from '../../firebaseConfig';
+import { useGameStore } from '../../../stores/useGameStore';
+import { db } from '../../../firebaseConfig';
 import { ref, onValue, update } from 'firebase/database';
-import { PlanetDashboard } from './PlanetDashboard';
-import { RoleRevealModal } from './RoleRevealModal';
-import { assignRoles, syncRolesToFirebase, getPlayerRole } from '../../utils/RoleManager';
-import { LEVEL_1_PROBLEMS } from '../../shared/ProblemData';
+import { PlanetDashboard } from '../PlanetDashboard';
+import { RoleRevealModal } from '../modals/RoleRevealModal';
+import { assignRoles, syncRolesToFirebase, getPlayerRole } from '../../../utils/RoleManager';
+import { LEVEL_1_PROBLEMS } from '../../../shared/ProblemData';
 
-import { usePlayerStore } from '../../stores/usePlayerStore';
-// // import { FirebaseAdapter } from '../../features/networking/FirebaseAdapter'; <--- MOVED TO COMMENT OR REMOVED
-import type { PlayerState } from '../../features/networking/NetworkInterface';
+import { usePlayerStore } from '../../../stores/usePlayerStore';
+// // import { FirebaseAdapter } from '../../../features/networking/FirebaseAdapter'; <--- MOVED TO COMMENT OR REMOVED
+import type { PlayerState } from '../../../features/networking/NetworkInterface';
 
 export const LobbyScreen = () => {
     const {

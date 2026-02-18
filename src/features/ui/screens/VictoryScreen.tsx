@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { useGameStore } from '../../stores/useGameStore';
-import type { PlayerState } from '../networking/NetworkInterface';
+import { useGameStore } from '../../../stores/useGameStore';
+import type { PlayerState } from '../../networking/NetworkInterface';
 
 interface VictoryScreenProps {
     status: 'VICTORY_CREW' | 'VICTORY_IMPOSTER';

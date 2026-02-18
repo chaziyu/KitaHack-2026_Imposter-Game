@@ -11,7 +11,9 @@ import { db } from '../../firebaseConfig';
 
 declare global {
     interface Window {
-        monaco: unknown;
+        monaco: {
+            Range: new (startLine: number, startCol: number, endLine: number, endCol: number) => unknown;
+        };
     }
 }
 
@@ -380,9 +382,10 @@ export const MeetingUI = () => {
                                     editorRef.current = editor;
                                     window.monaco = monaco;
                                     // Click to Highlight Logic
-                                    editor.onMouseDown((e: { target: { type: number, position: { lineNumber: number } } }) => {
-                                        if (network?.playerId === presenterId && [2, 3, 4, 6, 7].includes(e.target.type)) {
-                                            network.highlightLine(selectedFile, e.target.position.lineNumber);
+                                    editor.onMouseDown((e) => {
+                                        const target = e.target as { type: number; position: { lineNumber: number } | null };
+                                        if (network?.playerId === presenterId && [2, 3, 4, 6, 7].includes(target.type) && target.position) {
+                                            network.highlightLine(selectedFile, target.position.lineNumber);
                                         }
                                     });
                                 }}

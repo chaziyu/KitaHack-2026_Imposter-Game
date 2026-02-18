@@ -1,5 +1,5 @@
-import { useGameStore } from '../../stores/useGameStore';
-import { usePlayerStore } from '../../stores/usePlayerStore';
+import { useGameStore } from '../../../stores/useGameStore';
+import { usePlayerStore } from '../../../stores/usePlayerStore';
 import { motion } from 'framer-motion';
 
 export const RedemptionScreen = () => {
@@ -7,7 +7,7 @@ export const RedemptionScreen = () => {
     const { players } = usePlayerStore();
 
     // Check if I am reformed
-    const myPlayer = players.find(p => p.id === playerId);
+    const myPlayer = players.find((p: { id: string; status?: string }) => p.id === playerId);
     if (!myPlayer || myPlayer.status !== 'reformed') return null;
 
     const handleHighlightError = () => {

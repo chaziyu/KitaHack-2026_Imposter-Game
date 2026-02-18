@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../firebaseConfig';
+import { db } from '../../../firebaseConfig';
 import { ref, onValue } from 'firebase/database';
 
+interface Task {
+    id: string;
+    name: string;
+    status: string;
+    desc: string;
+}
+
 export const TaskBoard = () => {
-    const [tasks, setTasks] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [isOpen, setIsOpen] = useState(true); // Toggle minimize
 
     useEffect(() => {
@@ -12,7 +19,7 @@ export const TaskBoard = () => {
             const data = snapshot.val();
             if (data) {
                 // Convert the file list into an array of tasks
-                const taskList = Object.entries(data).map(([key, file]: [string, any]) => ({
+                const taskList = Object.entries(data).map(([key, file]: [string, { name?: string; testStatus?: string; description?: string }]) => ({
                     id: key,
                     name: file.name,
                     status: file.testStatus || 'PENDING', // PENDING, PASS, FAIL

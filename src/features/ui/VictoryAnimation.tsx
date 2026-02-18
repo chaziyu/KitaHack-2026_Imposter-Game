@@ -3,7 +3,7 @@ import { VICTORY_SCENES } from '../../shared/StoryContent';
 import { usePlayerProgress } from '../../stores/usePlayerProgress';
 import { useGameStore } from '../../stores/useGameStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
-import { SDGBadgeGroup } from './SDGBadge';
+import { SDGBadgeGroup } from './components/SDGBadge';
 
 interface VictoryAnimationProps {
     onClose: () => void;

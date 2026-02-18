@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useGameStore } from '../../stores/useGameStore';
-import { db } from '../../firebaseConfig';
+import { useGameStore } from '../../../stores/useGameStore';
+import { db } from '../../../firebaseConfig';
 import { ref, onValue, update } from 'firebase/database';
-import { runSystemTests } from '../game/GameLogic';
+import { runSystemTests } from '../../game/GameLogic';
 
 export const CentralTerminal = () => {
     const closeTerminal = useGameStore((state) => state.closeTerminal);
     const [logs, setLogs] = useState<string[]>(["Waiting for input..."]);
     const [status, setStatus] = useState<'IDLE' | 'PASS' | 'FAIL'>('IDLE');
-    const [files, setFiles] = useState<any>({});
+    const [files, setFiles] = useState<Record<string, unknown>>({});
 
     // 1. Listen to the latest code changes
     useEffect(() => {

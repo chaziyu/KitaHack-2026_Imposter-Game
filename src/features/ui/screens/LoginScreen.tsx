@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useAuthStore } from '../../stores/useAuthStore';
+import React, { useState } from 'react';
+import { useAuthStore } from '../../../stores/useAuthStore';
 
 export const LoginScreen = () => {
     const [name, setName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const login = useAuthStore(state => state.login);
+    const login = useAuthStore((state: { login: (name: string) => Promise<void> }) => state.login);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,8 +21,8 @@ export const LoginScreen = () => {
         try {
             await login(name.trim());
             // Success - useAuthStore will trigger app to show main game
-        } catch (err: any) {
-            setError(err.message || 'Login failed. Please try again.');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'Login failed. Please try again.');
             setIsLoading(false);
         }
     };

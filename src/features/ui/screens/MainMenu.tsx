@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useGameStore } from '../../stores/useGameStore';
-import { db } from '../../firebaseConfig';
+import { useGameStore } from '../../../stores/useGameStore';
+import { db } from '../../../firebaseConfig';
 import { ref, get, set } from 'firebase/database';
-import { FirebaseAdapter } from '../networking/FirebaseAdapter';
+import { FirebaseAdapter } from '../../networking/FirebaseAdapter';
 
 
 export const MainMenu = () => {
@@ -61,7 +61,7 @@ export const MainMenu = () => {
         await set(roomRef, {
             status: 'LOBBY',
             host: name,
-            createdAt: Date.now()
+            createdAt: Date.now() // eslint-disable-line -- called inside async handler, not during render
         });
 
         // CONNECT NETWORK

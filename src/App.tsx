@@ -68,7 +68,7 @@ function App() {
         // Trigger the imports so they are in the browser cache
         const imports = [
           import("./features/ui/CodeEditor"),
-          import("./features/ui/CentralTerminal"),
+          import("./features/ui/screens/CentralTerminal"),
           import("./features/ui/AcademyUI"),
           import("./features/ui/SabotageMenu")
         ];

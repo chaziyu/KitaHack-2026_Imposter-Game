@@ -50,7 +50,7 @@ export const executeCode = async (language: string, sourceCode: string, expected
             };
         }
 
-    } catch (e) {
+    } catch (_e) {
         return { success: false, output: "❌ Network Error: Could not reach compiler." };
     }
 };

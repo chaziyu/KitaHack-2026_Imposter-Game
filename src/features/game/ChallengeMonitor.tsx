@@ -18,8 +18,9 @@ export const ChallengeMonitor = () => {
             const data = snapshot.val();
             if (!data) return;
 
-            Object.entries(data).forEach(([fileId, fileData]: [string, { testStatus?: string }]) => {
-                const status = fileData.testStatus || 'PENDING';
+            Object.entries(data).forEach(([fileId, fileData]) => {
+                const fd = fileData as { testStatus?: string };
+                const status = fd.testStatus || 'PENDING';
 
                 // If file is failing/broken but we have it marked as completed -> Revert it!
                 if (status !== 'PASS' && completedRef.current.includes(fileId)) {

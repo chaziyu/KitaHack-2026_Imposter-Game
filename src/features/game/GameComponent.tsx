@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
 import { PreloadScene } from './scenes/PreloadScene';
-import { useGameStore } from '../../stores/useGameStore';
 import { SettingsUI } from '../ui/SettingsUI';
 
 export const GameComponent = () => {

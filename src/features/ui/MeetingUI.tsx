@@ -1,11 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PlayerState } from '../networking/NetworkInterface';
-
-interface MeetingOutcome {
-    ejectedId: string | null;
-    wasImposter: boolean;
-    reason: 'VOTE_SKIP' | 'VOTE_TIE' | 'VOTE_EJECT';
-}
 import { useMeetingStore } from '../../stores/useMeetingStore';
 import { useGameStore } from '../../stores/useGameStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
@@ -26,7 +20,7 @@ declare global {
 
 
 export const MeetingUI = () => {
-    const { status, meetingEndTime, presenterId, highlightedLine, chatMessages, votes, result, outcome } = useMeetingStore();
+    const { status, meetingEndTime, presenterId, highlightedLine, chatMessages, votes, result } = useMeetingStore();
     const { network, playerId, isHost, roomCode } = useGameStore();
     const { players } = usePlayerStore();
 
@@ -47,7 +41,7 @@ export const MeetingUI = () => {
     }, [status]);
 
     // Editor Ref
-    const editorRef = React.useRef<any>(null);
+    const editorRef = React.useRef<unknown>(null);
     const decorationsRef = React.useRef<string[]>([]);
 
     useEffect(() => {

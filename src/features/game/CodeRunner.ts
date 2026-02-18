@@ -7,9 +7,17 @@ export const executeCode = async (language: string, sourceCode: string, expected
 
     // 1. Prepare payload for Piston API
     // We use version 3.10.0 for Python, 18.15.0 for Node, etc.
+    const RUNTIME_VERSIONS: Record<string, string> = {
+        'javascript': '18.15.0',
+        'python': '3.10.0',
+        'cpp': '10.2.0'
+    };
+
+    const version = RUNTIME_VERSIONS[language] || '*';
+
     const payload = {
         language: language,
-        version: "*", // Use latest available
+        version: version,
         files: [
             {
                 content: sourceCode
@@ -29,7 +37,11 @@ export const executeCode = async (language: string, sourceCode: string, expected
 
         // 3. Check for missing run field (compile error or API issue)
         if (!data.run) {
-            return { success: false, output: `❌ Compiler Error:\n${data.compile?.stderr || 'No output from compiler.'}` };
+            console.error("Piston API Error:", data); // Log full error for debugging
+            return {
+                success: false,
+                output: `❌ Compiler Error:\n${data.message || data.compile?.stderr || 'No output from compiler (Check console for details).'}`
+            };
         }
 
         // 4. Check for Runtime Errors

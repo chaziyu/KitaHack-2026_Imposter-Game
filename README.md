@@ -72,7 +72,7 @@ This project addresses the urgent need for **Green Software Engineering** skills
 
 #### 1. Google AI - Gemma Models (The Brains)
 *Why Gemma?*
-- **Open & Efficient:** We utilize the **Gemma 2 (27b, 12b, 2b)** family of open models for transparency and performance.
+- **Open & Efficient:** We utilize the **Gemma 3 (27b, 12b, 2b)** family of open models for transparency and performance.
 - **Speed & Efficiency:** Essential for real-time gamification where players can't wait 10s for feedback.
 - **Context Window:** Large context allows Professor Gaia to remember the student's entire conversation history.
 

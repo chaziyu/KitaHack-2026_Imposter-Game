@@ -202,8 +202,7 @@ npm run preview
 
 > **Note:** Submit actual user testing data here after collecting feedback
 
-### User Testing Results (See [Full Logs](docs/USER_TESTING_LOGS.md))
-
+### User Testing Results 
 We conducted 3 phases of testing with **12 students (Ages 10-14)** and **3 teachers**.
 
 - **85%** of students understood "Green Coding" concepts after playing (up from 15%).
